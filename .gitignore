@@ -1,0 +1,9 @@
+node_modules/
+.auth/
+.claude
+sessions/
+temp/
+package-lock.json
+*.log
+.env
+.DS_Store
