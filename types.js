@@ -25,6 +25,11 @@
  */
 
 /**
+ * @typedef {object} DeveloperConfig
+ * @property {string[]} numbers Developer phone numbers (digits only, with country code) allowed to run `developer`-category commands.
+ */
+
+/**
  * @typedef {object} AutoStickerConfig
  * @property {boolean} enabled Master switch. When false, incoming media is never auto-converted.
  * @property {number} videoDurationLimit Videos longer than this (seconds) are ignored, not converted.
@@ -37,6 +42,7 @@
  * @property {string | string[]} prefix Single prefix, multiple prefixes, or a custom list — always normalized to an array.
  * @property {BotSessionConfig} session
  * @property {AutoStickerConfig} autoSticker
+ * @property {DeveloperConfig} developer
  * @property {{ directory: string }} plugins
  * @property {{ level: LogLevel }} logger
  */
@@ -151,6 +157,7 @@
  * @property {string} name Unique plugin name.
  * @property {'command' | 'event'} type
  * @property {string[]} [commands] Command names this plugin answers to. Required when `type === 'command'`.
+ * @property {Record<string, string>} [triggers] Optional map of trigger symbol -> command name (one of `commands`) that lets that command run *without* a prefix. e.g. `{ '>': 'eval' }` makes `> 1 + 1` invoke `eval`. Symbols take effect after the normal prefix path fails to match a command.
  * @property {string} [description]
  * @property {string} [version]
  * @property {string} [author]

@@ -87,6 +87,12 @@ export default {
       timeout: envInt('PENDING_COMMAND_TIMEOUT', 60_000),
    },
 
+   /** Developer-only gate: commands in the `developer` category (eval, exec, ...) are restricted to these numbers. */
+   developer: {
+      /** Comma-separated list of developer phone numbers (digits only, with country code). */
+      numbers: envList('BOT_DEVELOPER_NUMBER', []),
+   },
+
    /** Plugin loader settings. */
    plugins: {
       /** Directory recursively scanned for `<category>/<name>.js` plugin files. */

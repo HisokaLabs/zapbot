@@ -49,6 +49,23 @@ export default {
                      return;
                   }
                }
+
+               const trigger = ctx.commands.matchTrigger(text);
+               if (trigger) {
+                  ctx.pending.clear(chatJid, senderJid);
+
+                  const commandContext = {
+                     ...messageContext,
+                     prefix: trigger.symbol,
+                     command: trigger.command,
+                     args: trigger.args,
+                  };
+                  ctx.events.emit('messageCreate', messageContext);
+                  ctx.events.emit('message', messageContext);
+                  ctx.events.emit('command', commandContext);
+                  await ctx.commands.dispatch(commandContext);
+                  return;
+               }
             }
 
             if (!fromMe) {

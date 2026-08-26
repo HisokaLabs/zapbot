@@ -7,6 +7,8 @@ export class CommandManager {
       this.logger = logger.child({ scope: 'CommandManager' });
       /** @type {Map<string, BotPlugin>} */
       this.commands = new Map();
+      /** @type {Map<string, string>} */
+      this.triggers = new Map();
    }
 
    /** @param {BotPlugin} plugin */
@@ -26,6 +28,7 @@ export class CommandManager {
          return;
       }
 
+      const commandSet = new Set(plugin.commands.map(name => name.toLowerCase()));
       for (const name of plugin.commands) {
          const key = name.toLowerCase();
          if (this.commands.has(key)) {
@@ -35,11 +38,48 @@ export class CommandManager {
          }
          this.commands.set(key, plugin);
       }
+
+      if (plugin.triggers && typeof plugin.triggers === 'object') {
+         for (const [symbol, commandName] of Object.entries(plugin.triggers)) {
+            const command = String(commandName).toLowerCase();
+            if (!commandSet.has(command)) {
+               this.logger.warn(
+                  `Plugin "${plugin.name}" declares trigger "${symbol}" -> "${commandName}" but has no such command — skipped.`,
+               );
+               continue;
+            }
+            if (this.triggers.has(symbol)) {
+               this.logger.warn(
+                  `Trigger "${symbol}" is already claimed by "${this.triggers.get(symbol)}" — "${plugin.name}" ignored.`,
+               );
+               continue;
+            }
+            this.triggers.set(symbol, command);
+         }
+      }
    }
 
    /** @param {string} command */
    has(command) {
       return this.commands.has(command.toLowerCase());
+   }
+
+   /**
+    * @param {string} text
+    * @returns {{ symbol: string, command: string, args: string[] } | undefined}
+    */
+   matchTrigger(text) {
+      for (const [symbol, command] of this.triggers) {
+         if (text.startsWith(symbol)) {
+            const argsText = text.slice(symbol.length).trim();
+            return {
+               symbol,
+               command,
+               args: argsText.length ? argsText.split(/\s+/) : [],
+            };
+         }
+      }
+      return undefined;
    }
 
    list() {

@@ -1,6 +1,8 @@
 /**
  * @type {import('#types').BotPlugin}
  */
+import { isDeveloper } from '#utils/developer.js';
+
 export default {
    name: 'menu',
    type: 'command',
@@ -21,6 +23,7 @@ export default {
       const grouped = new Map();
       for (const { plugin, category } of ctx.plugins.list()) {
          if (plugin.type !== 'command' || !plugin.commands?.length) continue;
+         if (category === 'developer' && !isDeveloper(ctx, command.senderJid)) continue;
          const list = grouped.get(category) ?? [];
          list.push(...plugin.commands);
          grouped.set(category, list);
