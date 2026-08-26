@@ -42,14 +42,14 @@ await bot.start(); // autoloads events, autoloads plugins, connects to WhatsApp
 await bot.stop(); // graceful disconnect (keeps credentials)
 ```
 
-| Member                                                                                 | Signature                    | Notes                                                                            |
-| -------------------------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------- |
-| `new Bot(config)`                                                                      | `(config: BotConfig) => Bot` | Constructs every core manager and the zapo client wrapper. Does not connect yet. |
-| `bot.use(middleware)`                                                                  | `(mw: Middleware) => void`   | Shorthand for `bot.middleware.use(mw)`.                                          |
-| `bot.buildContext()`                                                                   | `() => BotContext`           | Returns the memoized shared context (same object every call).                    |
-| `bot.start()`                                                                          | `() => Promise<void>`        | Autoloads `src/events/*.js`, autoloads `src/plugins/**/*.js`, connects.          |
-| `bot.stop()`                                                                           | `() => Promise<void>`        | Disconnects without clearing stored credentials.                                 |
-| `bot.config` / `bot.logger` / `bot.events` / `bot.commands` / `bot.plugins` / `bot.wa` | n/a                          | Direct access to each core manager, same instances exposed on `ctx`.             |
+| Member                                                                                                 | Signature                    | Notes                                                                            |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------- | -------------------------------------------------------------------------------- |
+| `new Bot(config)`                                                                                      | `(config: BotConfig) => Bot` | Constructs every core manager and the zapo client wrapper. Does not connect yet. |
+| `bot.use(middleware)`                                                                                  | `(mw: Middleware) => void`   | Shorthand for `bot.middleware.use(mw)`.                                          |
+| `bot.buildContext()`                                                                                   | `() => BotContext`           | Returns the memoized shared context (same object every call).                    |
+| `bot.start()`                                                                                          | `() => Promise<void>`        | Autoloads `src/events/*.js`, autoloads `src/plugins/**/*.js`, connects.          |
+| `bot.stop()`                                                                                           | `() => Promise<void>`        | Disconnects without clearing stored credentials.                                 |
+| `bot.config` / `bot.logger` / `bot.events` / `bot.commands` / `bot.pending` / `bot.plugins` / `bot.wa` | n/a                          | Direct access to each core manager, same instances exposed on `ctx`.             |
 
 ## Context API
 
@@ -180,13 +180,14 @@ The shared engine behind both autoloaders (`core/PluginManager.js` and `events/i
 
 Reach for these directly only when `ctx`'s convenience surface doesn't cover what you need, normal plugins should not need to import `core/*` files.
 
-| Class               | File                        | Responsibility                                                               |
-| ------------------- | --------------------------- | ---------------------------------------------------------------------------- |
-| `ConfigManager`     | `core/ConfigManager.js`     | Dot-path config get/set + `"change"` events.                                 |
-| `Logger`            | `core/Logger.js`            | Implements zapo's `Logger` interface; also usable standalone.                |
-| `EventManager`      | `core/EventManager.js`      | The internal event bus (extends `EventEmitter`).                             |
-| `MiddlewareManager` | `core/MiddlewareManager.js` | Koa-style onion middleware stack.                                            |
-| `CommandManager`    | `core/CommandManager.js`    | Command name → plugin `Map`, dispatch.                                       |
-| `PluginManager`     | `core/PluginManager.js`     | Recursive filesystem plugin autoloader (category folders, no metadata file). |
-| `ClientWrapper`     | `core/ClientWrapper.js`     | Owns the zapo `WaClient`, store, pairing, reconnect.                         |
-| `Bot`               | `core/Bot.js`               | Wires everything above together; the only file `src/index.js` imports.       |
+| Class                   | File                            | Responsibility                                                                            |
+| ----------------------- | ------------------------------- | ----------------------------------------------------------------------------------------- |
+| `ConfigManager`         | `core/ConfigManager.js`         | Dot-path config get/set + `"change"` events.                                              |
+| `Logger`                | `core/Logger.js`                | Implements zapo's `Logger` interface; also usable standalone.                             |
+| `EventManager`          | `core/EventManager.js`          | The internal event bus (extends `EventEmitter`).                                          |
+| `MiddlewareManager`     | `core/MiddlewareManager.js`     | Koa-style onion middleware stack.                                                         |
+| `CommandManager`        | `core/CommandManager.js`        | Command name → plugin `Map`, dispatch.                                                    |
+| `PendingCommandManager` | `core/PendingCommandManager.js` | In-memory `chatId+userId` → pending-command store (`wait`/`set`/`get`/`consume`/`clear`). |
+| `PluginManager`         | `core/PluginManager.js`         | Recursive filesystem plugin autoloader (category folders, no metadata file).              |
+| `ClientWrapper`         | `core/ClientWrapper.js`         | Owns the zapo `WaClient`, store, pairing, reconnect.                                      |
+| `Bot`                   | `core/Bot.js`                   | Wires everything above together; the only file `src/index.js` imports.                    |

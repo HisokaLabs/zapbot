@@ -20,6 +20,7 @@ All runtime behavior is controlled by [`config/config.js`](../config/config.js),
 | `AUTO_STICKER_VIDEO_DURATION_LIMIT` | `autoSticker.videoDurationLimit` | `10`                   |
 | `AUTO_STICKER_PACKNAME`             | `autoSticker.packname`           | `Bot Sticker`          |
 | `AUTO_STICKER_AUTHOR`               | `autoSticker.author`             | `Developer`            |
+| `PENDING_COMMAND_TIMEOUT`           | `pendingCommand.timeout`         | `60000`                |
 | `PLUGINS_DIRECTORY`                 | `plugins.directory`              | `./src/plugins`        |
 | `LOG_LEVEL`                         | `logger.level`                   | `info`                 |
 | `LOG_PRETTY`                        | `logger.pretty`                  | `true`                 |

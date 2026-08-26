@@ -78,6 +78,15 @@ export default {
       author: env('AUTO_STICKER_AUTHOR', 'Developer'),
    },
 
+   /**
+    * Transient pending-command memory (see core/PendingCommandManager.js).
+    * Holds commands waiting for a user's next message, in memory only.
+    */
+   pendingCommand: {
+      /** How long (ms) a pending command waits for the user's next message. */
+      timeout: envInt('PENDING_COMMAND_TIMEOUT', 60_000),
+   },
+
    /** Plugin loader settings. */
    plugins: {
       /** Directory recursively scanned for `<category>/<name>.js` plugin files. */

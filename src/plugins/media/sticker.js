@@ -21,6 +21,7 @@ export default {
       const kind = ctx.utils.media.getMessageKind(target);
 
       if (!['image', 'video', 'gif'].includes(kind)) {
+         ctx.pending.wait(command, ['image', 'gif', 'video']);
          await command.reply('Send or reply to an image, GIF, or video with .sticker');
          return;
       }

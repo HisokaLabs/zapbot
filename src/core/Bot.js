@@ -6,6 +6,7 @@ import { ConfigManager } from '#core/ConfigManager.js';
 import { EventManager } from '#core/EventManager.js';
 import { Logger } from '#core/Logger.js';
 import { MiddlewareManager } from '#core/MiddlewareManager.js';
+import { PENDING_COMMAND_TIMEOUT, PendingCommandManager } from '#core/PendingCommandManager.js';
 import { PluginManager } from '#core/PluginManager.js';
 import { loadEvents } from '#events/index.js';
 import * as helper from '#utils/helper.js';
@@ -27,6 +28,10 @@ export class Bot {
       this.events = new EventManager();
       this.middleware = new MiddlewareManager();
       this.commands = new CommandManager(this.logger);
+      this.pending = new PendingCommandManager({
+         logger: this.logger,
+         timeoutMs: this.config.get('pendingCommand.timeout', PENDING_COMMAND_TIMEOUT),
+      });
       this.wa = new ClientWrapper({
          config: this.config,
          logger: this.logger,
@@ -71,6 +76,7 @@ export class Bot {
          logger: this.logger,
          plugins: this.plugins,
          commands: this.commands,
+         pending: this.pending,
          events: this.events,
          middleware: this.middleware,
          utils: { helper, media, sticker, parseMessage },

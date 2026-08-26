@@ -63,6 +63,21 @@
  */
 
 /**
+ * A transient "waiting for more input" record, stored by
+ * `core/PendingCommandManager.js` and keyed by `chatId + userId`. Lives only
+ * in process memory: it is lost when the bot restarts.
+ *
+ * @typedef {object} PendingCommandState
+ * @property {string} command Command name to resume (e.g. "sticker").
+ * @property {string} prefix Prefix the user originally typed.
+ * @property {string[]} args Original command arguments.
+ * @property {MessageKind[]} expectedInput Message kinds accepted as the follow-up input.
+ * @property {Record<string, unknown>} [data] Arbitrary extra context forwarded to the resumed command.
+ * @property {number} createdAt Unix epoch ms when the pending command was registered.
+ * @property {number} expiresAt Unix epoch ms after which the pending command is void.
+ */
+
+/**
  * Normalized, convenient view of an incoming zapo message — built once by
  * `utils/parseMessage.js` per inbound event and threaded through the
  * middleware stack, event bus, and command dispatch. Extended into a
@@ -162,6 +177,7 @@
  * @property {import('#core/Logger.js').Logger} logger
  * @property {import('#core/PluginManager.js').PluginManager} plugins
  * @property {import('#core/CommandManager.js').CommandManager} commands
+ * @property {import('#core/PendingCommandManager.js').PendingCommandManager} pending Transient in-memory pending-command store.
  * @property {import('#core/EventManager.js').EventManager} events
  * @property {import('#core/MiddlewareManager.js').MiddlewareManager} middleware
  * @property {{ helper: typeof import('#utils/helper.js'), media: typeof import('#utils/media.js'), sticker: typeof import('#utils/sticker.js'), parseMessage: import('#utils/parseMessage.js').parseMessage }} utils

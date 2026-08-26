@@ -1,6 +1,7 @@
 node_modules/
 .auth/
 .claude
+.dsh
 sessions/
 temp/
 package-lock.json
