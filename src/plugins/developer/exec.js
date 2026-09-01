@@ -1,6 +1,3 @@
-/**
- * @type {import('#types').BotPlugin}
- */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -52,6 +49,9 @@ const ALLOWED_BINARIES = new Set([
    'python3',
 ]);
 
+/**
+ * @type {import('#types').BotPlugin}
+ */
 export default {
    name: 'exec',
    type: 'command',

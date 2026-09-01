@@ -1,10 +1,10 @@
-/**
- * @type {import('#types').BotPlugin}
- */
 import { Worker } from 'node:worker_threads';
 
 import { isDeveloper } from '#utils/developer.js';
 
+/**
+ * @type {import('#types').BotPlugin}
+ */
 export default {
    name: 'eval',
    type: 'command',

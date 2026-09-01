@@ -1,8 +1,8 @@
+import { isDeveloper } from '#utils/developer.js';
+
 /**
  * @type {import('#types').BotPlugin}
  */
-import { isDeveloper } from '#utils/developer.js';
-
 export default {
    name: 'menu',
    type: 'command',
