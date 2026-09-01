@@ -20,6 +20,8 @@ All runtime behavior is controlled by [`config/config.js`](../config/config.js),
 | `AUTO_STICKER_VIDEO_DURATION_LIMIT` | `autoSticker.videoDurationLimit` | `10`                   |
 | `AUTO_STICKER_PACKNAME`             | `autoSticker.packname`           | `Bot Sticker`          |
 | `AUTO_STICKER_AUTHOR`               | `autoSticker.author`             | `Developer`            |
+| `BOT_DEVELOPER_NUMBER`              | `developer.numbers`              | `[]`                   |
+| `SELF_BOT_ENABLED`                  | `selfBot.enabled`                | `false`                |
 | `PENDING_COMMAND_TIMEOUT`           | `pendingCommand.timeout`         | `60000`                |
 | `PLUGINS_DIRECTORY`                 | `plugins.directory`              | `./src/plugins`        |
 | `LOG_LEVEL`                         | `logger.level`                   | `info`                 |
@@ -65,6 +67,25 @@ export default {
 - `enabled: false` (the default) disables `events/stickerConverter.js` entirely: incoming media is inspected (for the `media`/`image`/`video`/`gif` bus events) but never auto-converted.
 - `videoDurationLimit` only applies to videos; GIFs (a video message with `gifPlayback: true`) always convert regardless of length, matching WhatsApp's own GIF semantics (they're short by construction).
 - `packname`/`author` are also the defaults used by the manual `.sticker` command plugin (`src/plugins/sticker/index.js`) unless it's edited to use its own values.
+
+## Self bot (owner-only) configuration
+
+```js
+export default {
+   selfBot: {
+      enabled: false, // master switch for owner-only mode
+   },
+};
+```
+
+- `enabled: false` (the default) means everyone can use the bot.
+- `enabled: true` turns on owner-only mode: every incoming message must come from the bot's own account (its own number, i.e. `fromMe`) or from a number listed in `developer.numbers` (`BOT_DEVELOPER_NUMBER`). Anything else is dropped **silently** — the middleware never calls `next()`, so no command runs and no message is sent back.
+
+The gate is implemented as a middleware at `src/middlewares/selfBot.js`, registered in `src/index.js` via `bot.use(selfBotMiddleware)`. It reads `selfBot.enabled` fresh on every message, so you can toggle it at runtime:
+
+```js
+ctx.config.set('selfBot.enabled', true);
+```
 
 ## Session configuration
 

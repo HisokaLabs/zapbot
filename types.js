@@ -30,6 +30,11 @@
  */
 
 /**
+ * @typedef {object} SelfBotConfig
+ * @property {boolean} enabled Master switch. When false, everyone can use the bot.
+ */
+
+/**
  * @typedef {object} AutoStickerConfig
  * @property {boolean} enabled Master switch. When false, incoming media is never auto-converted.
  * @property {number} videoDurationLimit Videos longer than this (seconds) are ignored, not converted.
@@ -43,6 +48,7 @@
  * @property {BotSessionConfig} session
  * @property {AutoStickerConfig} autoSticker
  * @property {DeveloperConfig} developer
+ * @property {SelfBotConfig} selfBot
  * @property {{ directory: string }} plugins
  * @property {{ level: LogLevel }} logger
  */

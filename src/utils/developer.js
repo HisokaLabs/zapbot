@@ -4,7 +4,8 @@
  */
 export function normalizeNumber(value) {
    if (!value) return '';
-   const base = String(value).split('@')[0];
+   // Strip the `@server` suffix and any `:device` segment, then keep digits only.
+   const base = String(value).split('@')[0].split(':')[0];
    return base.replace(/\D/g, '');
 }
 

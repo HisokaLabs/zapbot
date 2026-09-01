@@ -20,6 +20,7 @@
       "#config": "./config/config.js",
       "#core/*.js": "./src/core/*.js",
       "#events/*.js": "./src/events/*.js",
+      "#middlewares/*.js": "./src/middlewares/*.js",
       "#plugins/*.js": "./src/plugins/*.js",
       "#utils/*.js": "./src/utils/*.js"
    },

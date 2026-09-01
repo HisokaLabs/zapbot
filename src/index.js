@@ -1,8 +1,11 @@
 import { Bot } from '#core/Bot.js';
+import selfBotMiddleware from '#middlewares/selfBot.js';
 
 import config from '#config';
 
 const bot = new Bot(config);
+
+bot.use(selfBotMiddleware);
 
 process.on('SIGINT', async () => {
    bot.logger.warn('Shutting down (SIGINT)...');

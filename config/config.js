@@ -96,6 +96,12 @@ export default {
       numbers: envList('BOT_DEVELOPER_NUMBER', []),
    },
 
+   /** Self-bot gate: when enabled, the bot only responds to its own account (self) or the developer numbers. */
+   selfBot: {
+      /** Master switch. When false, everyone can use the bot (default behaviour). */
+      enabled: envBool('SELF_BOT_ENABLED', false),
+   },
+
    /** Plugin loader settings. */
    plugins: {
       /** Directory recursively scanned for `<category>/<name>.js` plugin files. */
