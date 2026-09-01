@@ -3,7 +3,7 @@
 ## Requirements
 
 - **Node.js >= 20.9.0** (required by `zapo-js`). Node 20 or 22 LTS is recommended; see the [Windows note](#windows-native-modules) below if you're on a very new Node release.
-- **ffmpeg** on `PATH`: required by `wa-sticker-formatter` to convert video/GIF input into stickers. Not needed if you only send/convert static images.
+- **ffmpeg** on `PATH`: required by the internal sticker converter (`src/utils/sticker/webp.js`) to convert video/GIF input into stickers. Not needed if you only send/convert static images.
 - A terminal that can render QR codes (any modern terminal works), or a phone ready to enter an 8-character pairing code instead.
 
 ## Install dependencies
@@ -14,18 +14,18 @@ npm install
 
 This installs:
 
-| Package                                    | Why                                                                                                |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `zapo-js`                                  | The WhatsApp Web protocol client the framework wraps.                                              |
-| `@zapo-js/store-sqlite` + `better-sqlite3` | Persists auth/session state to disk so you don't re-pair on every restart.                         |
-| `wa-sticker-formatter`                     | Builds WebP stickers from images/video for the sticker plugin and the automatic sticker converter. |
-| `qrcode-terminal`                          | Renders the pairing QR code in your terminal.                                                      |
+| Package                                    | Why                                                                        |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `zapo-js`                                  | The WhatsApp Web protocol client the framework wraps.                      |
+| `@zapo-js/store-sqlite` + `better-sqlite3` | Persists auth/session state to disk so you don't re-pair on every restart. |
+| `sharp`                                    | Encodes static images to WebP for the internal sticker converter.          |
+| `qrcode-terminal`                          | Renders the pairing QR code in your terminal.                              |
 
 There is no build step, no bundler, and no type-checking pipeline: the framework runs directly as plain ESM JavaScript. Module aliases (`#core/*.js`, `#utils/*.js`, ...) come from `package.json`'s native `"imports"` field, and shared type hints live in a single JSDoc file, [`/types.js`](../types.js).
 
 ### Windows native modules
 
-`better-sqlite3` and (transitively, via `wa-sticker-formatter`) `sharp` are native addons. On Windows they need either:
+`better-sqlite3` and `sharp` are native addons. On Windows they need either:
 
 1. A **prebuilt binary** for your exact Node version, usually available automatically for current Node LTS releases, or
 2. **Build tools** to compile from source: [Visual Studio Build Tools](https://github.com/nodejs/node-gyp#on-windows) ("Desktop development with C++" workload) + Python 3.

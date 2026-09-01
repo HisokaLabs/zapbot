@@ -49,11 +49,11 @@
 
 /**
  * @typedef {object} StickerOptions
- * @property {string} [pack] Sticker pack name (EXIF metadata).
- * @property {string} [author] Sticker author (EXIF metadata).
- * @property {'default' | 'full' | 'crop'} [type] 'full' keeps the source aspect ratio; 'crop' fills the square.
- * @property {string[]} [categories] Sticker categories (emoji tray hints).
- * @property {number} [quality] WebP quality, 0-100.
+ * @property {string} [pack] Sticker pack name (`sticker-pack-name` EXIF metadata).
+ * @property {string} [author] Sticker pack publisher (`sticker-pack-publisher` EXIF metadata).
+ * @property {'default' | 'full' | 'crop'} [type] `default`/`full` pad the image with transparency into a 512x512 square; `crop` fills the square by cropping.
+ * @property {number} [quality] WebP quality, 0-100 (static images only).
+ * @property {boolean} [isVideo] Force the video/GIF (ffmpeg) path; auto-detected from the buffer when omitted.
  */
 
 /**

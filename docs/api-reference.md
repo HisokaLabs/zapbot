@@ -163,9 +163,16 @@ See [plugin-development.md](./plugin-development.md). The contract (`import('#ty
 
 ### `utils/sticker.js`
 
-| Function                          | Signature                                                                                               |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `createSticker(buffer, options?)` | `(Buffer, StickerOptions?) => Promise<Buffer>`, WebP-encoded sticker bytes, via `wa-sticker-formatter`. |
+`sharp` encodes static images; `ffmpeg` converts video/GIF.
+
+| Function                          | Signature                                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `createSticker(buffer, options?)` | `(Buffer, StickerOptions?) => Promise<Buffer>`, WebP-encoded sticker bytes with pack EXIF metadata.         |
+| `buildSticker(data, options?)`    | `(Buffer, { pack?, author?, isSticker?, isVideo?, imageOptions? }?) => Promise<Buffer>`, low-level builder. |
+| `buildExif(pack?, author?)`       | `(string?, string?) => Buffer`, the WhatsApp sticker pack EXIF blob.                                        |
+| `injectWebPEXIF(input, exif)`     | `(Buffer, Buffer) => Buffer`, attaches the EXIF chunk to a WebP (pure RIFF rewrite).                        |
+| `toWebP512(data, options?)`       | `(Buffer, { quality?, fit? }?) => Promise<Buffer>`, static image → 512x512 WebP.                            |
+| `videoToWebP(data)`               | `(Buffer) => Promise<Buffer>`, video/GIF → animated WebP via ffmpeg.                                        |
 
 ### `utils/loader.js`
 

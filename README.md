@@ -1,46 +1,67 @@
 # WhatsApp Bot Framework 🤖
 
-An event-driven, plugin-based WhatsApp bot framework for Node.js, built on top of [`zapo-js`](https://github.com/vinikjkkj/zapo). No `commandHandler()`, no `switch(command)`, no static prefix table. Every feature is a listener on an internal event bus, and every command is just a `Map` entry a plugin registers at load time.
+An event-driven, plugin-based WhatsApp bot framework for Node.js, built on top of [`zapo-js`](https://github.com/vinikjkkj/zapo). The framework uses an internal event bus, dynamic plugin loading, and command mapping to create a modular and extensible WhatsApp bot architecture.
 
 ## Features ✨
 
-- **Plugin-based, zero-config**: drop a single `.js` file into `src/plugins/<category>/` and it's live. No `plugin.json`, no core file ever needs to change to add a command.
-- **Autoloaders for both plugins and events**: `core/PluginManager.js` and `events/index.js#loadEvents` recursively scan their directories and register whatever they find. Nothing to register by hand.
-- **Event-driven**: `message`, `command`, `media`, `image`, `video`, `gif`, `sticker`, `connection`, `ready`, and any custom event a plugin wants to emit, all on one bus (`ctx.events`).
-- **`parseMessage` built in**: every incoming message is normalized once into `text`, `isMedia`, `isType(kind)`, `isGroup`, `quoted`, `mentions`, and bound `send`/`reply` helpers, instead of every plugin re-inspecting the raw protobuf.
-- **Middleware support**: Koa-style `bot.use(async (ctx, next) => { ... await next() })` for logging, anti-spam, permissions.
-- **Multi-prefix, hot-reloadable**: `.`, `!`, `#` (or your own) out of the box; change the prefix list at runtime with `ctx.config.set('prefix', [...])`, no restart needed.
-- **Automatic sticker conversion**: opt-in event listener that turns incoming images/GIFs/short videos into stickers.
-- **Default plugins**: `ping`, `menu` (reads the live plugin/command list, grouped by category, never hardcoded), `sticker`.
-- **Lightweight JSDoc, no build step**: one type file at the project root ([`types.js`](./types.js)), no `.d.ts`, no `tsconfig`/`jsconfig`, no compiler. Module aliases come from Node's native `package.json#imports`.
+- **Plugin-based architecture**: Add new functionality by creating a single `.js` file inside `src/plugins/<category>/`. Plugins are discovered automatically and integrated into the bot lifecycle.
+
+- **Automatic plugin and event loading**: `core/PluginManager.js` and `events/index.js#loadEvents` recursively scan their directories and load available modules automatically.
+
+- **Event-driven system**: Handle `message`, `command`, `media`, `image`, `video`, `gif`, `sticker`, `connection`, `ready`, and custom events through a unified event bus available from `ctx.events`.
+
+- **Built-in message parser**: Every incoming message is normalized through `parseMessage` into a consistent structure containing `text`, `isMedia`, `isType(kind)`, `isGroup`, `quoted`, `mentions`, and helper methods such as `send` and `reply`.
+
+- **Middleware support**: Extend bot behavior with Koa-style middleware:
+
+```js
+bot.use(async (ctx, next) => {
+   await next();
+});
+```
+
+Useful for logging, anti-spam systems, permissions, and shared request handling.
+
+- **Flexible prefix configuration**: Supports multiple command prefixes and runtime prefix updates through configuration management.
+
+- **Automatic sticker conversion**: Optional event-based sticker conversion for supported image, GIF, and short video messages.
+
+- **Built-in plugins**: Includes default plugins such as `ping`, `menu`, and `sticker`. The menu dynamically reads registered plugins and commands, organized by category.
+
+- **Lightweight JSDoc workflow**: Uses a root [`types.js`](./types.js) file for type definitions with native Node.js module aliases from `package.json#imports`.
 
 ## Installation ⚙️
 
 ```bash
 npm install
+
 npm start
 ```
 
-See [docs/installation.md](./docs/installation.md) for prerequisites (Node >= 20.9.0, `ffmpeg` for video stickers, and a Windows-specific native-module note).
+See [`docs/installation.md`](./docs/installation.md) for prerequisites such as Node.js version requirements, `ffmpeg` installation for video stickers, and platform-specific notes.
 
 ## Linting & formatting 🧹
 
-ESLint (with [`eslint-plugin-import-x`](https://github.com/un-ts/eslint-plugin-import-x) for import ordering/categorization) and Prettier (LF line endings enforced via `.prettierrc.json`/`.editorconfig`/`.gitattributes`, so formatting is identical on Windows, macOS, and Linux):
+Uses ESLint with [`eslint-plugin-import-x`](https://github.com/un-ts/eslint-plugin-import-x) for import ordering and categorization, combined with Prettier formatting rules.
 
 ```bash
-npm run lint        # check
-npm run lint:fix    # check + autofix (also sorts/groups imports: node: -> packages -> #alias -> relative)
-npm run format       # prettier --write
-npm run format:check # prettier --check, no writes
+npm run lint          # check
+
+npm run lint:fix      # check + autofix
+
+npm run format        # format files
+
+npm run format:check  # verify formatting
 ```
 
 ## Configuration 🔧
 
-Everything lives in [`config/config.js`](./config/config.js):
+Configuration is managed through [`config/config.js`](./config/config.js):
 
 ```js
 export default {
    prefix: ['.', '!', '#'],
+
    session: {
       id: 'default',
       storePath: './.auth/state.sqlite',
@@ -48,20 +69,27 @@ export default {
       autoReconnect: true,
       maxReconnectAttempts: 10,
    },
+
    autoSticker: {
       enabled: false,
       videoDurationLimit: 10,
       packname: 'Bot Sticker',
       author: 'Developer',
    },
-   plugins: { directory: './src/plugins' },
-   logger: { level: 'info' },
+
+   plugins: {
+      directory: './src/plugins',
+   },
+
+   logger: {
+      level: 'info',
+   },
 };
 ```
 
-Every field can be overridden by an environment variable (loaded via `dotenv`) without editing this file: copy [`.env.example`](./.env.example) to `.env` (git-ignored) to set deployment-specific/sensitive values like `session.phoneNumber`.
+Configuration values can be overridden through environment variables using `dotenv`. Copy [`.env.example`](./.env.example) to `.env` for deployment-specific settings such as session configuration.
 
-Full reference: [docs/configuration.md](./docs/configuration.md).
+Full reference: [`docs/configuration.md`](./docs/configuration.md)
 
 ## Plugin example 🔌
 
@@ -85,12 +113,14 @@ export default {
 };
 ```
 
-That's it: `.hello` works and shows up in `.menu` under the `main` category automatically. No metadata file, no registration step. More in [docs/plugin-development.md](./docs/plugin-development.md).
+The plugin is loaded automatically, registered as a command, and becomes available through the command system.
+
+More details: [`docs/plugin-development.md`](./docs/plugin-development.md)
 
 ## Event example ⚡
 
 ```js
-// src/events/myFeature.js, or ctx.registerEvent(...) from any plugin's init(ctx)
+// src/events/myFeature.js
 
 /** @type {import('#types').BotEventModule} */
 export default {
@@ -99,8 +129,10 @@ export default {
    register(ctx) {
       ctx.events.on('image', async mediaContext => {
          if (!ctx.config.get('autoSticker.enabled')) return;
+
          const bytes = await mediaContext.downloadBytes();
          const sticker = await ctx.utils.sticker.createSticker(Buffer.from(bytes));
+
          await ctx.wa.reply(mediaContext.raw, {
             type: 'sticker',
             media: sticker,
@@ -111,36 +143,48 @@ export default {
 };
 ```
 
-Drop it in `src/events/` and it's autoloaded: no `src/events/index.js` edit required. More in [docs/event-development.md](./docs/event-development.md).
+Event modules inside `src/events/` are automatically loaded and connected to the event system.
+
+More details: [`docs/event-development.md`](./docs/event-development.md)
 
 ## Project layout 🗂️
 
 ```
-config/config.js        # the only config file (prefix, session, autoSticker, plugins, logger)
-types.js                 # single root JSDoc type file (#types alias)
-eslint.config.js         # ESLint flat config (import-x order rules + prettier integration)
-.prettierrc.json         # Prettier config (LF line endings, no semicolons, single quotes)
+config/config.js        # application configuration
+
+types.js                # root JSDoc type definitions
+
+eslint.config.js        # ESLint configuration
+
+.prettierrc.json        # Prettier configuration
+
 src/
-├── core/                # Bot, ConfigManager, EventManager, MiddlewareManager,
-│                         # CommandManager, PluginManager, ClientWrapper, Logger
-├── events/               # autoloaded: message.js, media.js, stickerConverter.js, connection.js, index.js (loader)
+
+├── core/               # Bot, ConfigManager, EventManager,
+│                       # MiddlewareManager, CommandManager,
+│                       # PluginManager, ClientWrapper, Logger
+│
+├── events/             # event modules and event loader
+│
 ├── plugins/
-│   ├── main/             # ping.js, menu.js
-│   └── media/             # sticker.js
-├── utils/                # helper.js, media.js, sticker.js, parseMessage.js, loader.js
-└── index.js               # boots Bot with config/config.js
+│   ├── main/           # default command plugins
+│   └── media/          # media-related plugins
+│
+├── utils/              # shared utilities
+│
+└── index.js            # application entry point
 ```
 
 ## Documentation 📚
 
-- [docs/installation.md](./docs/installation.md)
-- [docs/configuration.md](./docs/configuration.md)
-- [docs/plugin-development.md](./docs/plugin-development.md)
-- [docs/event-development.md](./docs/event-development.md)
-- [docs/api-reference.md](./docs/api-reference.md)
-- [docs/examples.md](./docs/examples.md)
-- [AGENTS.md](./AGENTS.md): coding rules and architecture guide for contributors (human or AI).
+- [`docs/installation.md`](./docs/installation.md)
+- [`docs/configuration.md`](./docs/configuration.md)
+- [`docs/plugin-development.md`](./docs/plugin-development.md)
+- [`docs/event-development.md`](./docs/event-development.md)
+- [`docs/api-reference.md`](./docs/api-reference.md)
+- [`docs/examples.md`](./docs/examples.md)
+- [`AGENTS.md`](./AGENTS.md): coding rules and architecture guide for contributors.
 
 ## License 📄
 
-MIT
+[MIT License](./LICENSE)
