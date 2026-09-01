@@ -177,16 +177,6 @@ export class ClientWrapper {
          this.logger.info(`Pairing code: ${code.match(/.{1,4}/g)?.join('-') ?? code}`);
       });
 
-      client.on('auth_pairing_required', async ({ forceManual }) => {
-         if (this.config.get('session.pairing') !== 'code') return;
-
-         // `forceManual: true` means the QR refresh budget was exhausted and the user must request a fresh one (e.g. via the link-code flow).`
-         if (!forceManual) return;
-
-         const phoneNumber = this.config.get('session.phoneNumber', '').replace(/\D+/g, '');
-         await this.requestPairingCode(phoneNumber);
-      });
-
       client.on('auth_paired', ({ credentials }) => {
          this.logger.success(
             `Paired as ${credentials.meJid} (${credentials.pushName ?? 'no push name'})`,
