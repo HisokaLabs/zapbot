@@ -44,6 +44,9 @@ export default {
       /** Device browser name, forwarded to zapo's `WaClient`. */
       deviceBrowser: env('SESSION_DEVICE_BROWSER', 'edge'),
 
+      /** Operating system display name, forwarded to zapo's `WaClient`. */
+      deviceOsDisplayName: env('SESSION_OS_DISPLAY_NAME', 'Windows'),
+
       /**
        * Pairing method: 'qr' renders a QR code in the terminal, 'code'
        * requests an 8-character pairing code for `phoneNumber` instead.

@@ -71,6 +71,7 @@ export class ClientWrapper {
             store,
             sessionId,
             deviceBrowser: this.config.get('session.deviceBrowser', WA_BROWSERS.CHROME),
+            deviceOsDisplayName: this.config.get('session.deviceOsDisplayName', 'Windows'),
             markOnlineOnConnect: this.config.get('session.markOnlineOnConnect', false),
             history: {
                enabled: true,
@@ -206,7 +207,7 @@ export class ClientWrapper {
          throw new Error('Phone number is required for pairing code request');
       }
 
-      const code = await this.client.auth.requestPairingCode(phoneNumber);
+      const code = await this.client.auth.requestPairingCode(phoneNumber, true);
       return code;
    }
 
