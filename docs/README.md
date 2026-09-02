@@ -1,7 +1,7 @@
 # Documentation 📚
 
-- [Installation](./installation.md): install dependencies, set up the environment, pair WhatsApp, run the bot.
-- [Configuration](./configuration.md): prefix, sticker, session, plugin, and logger configuration.
+- [Installation](./installation.md): install dependencies, set up the environment, pair WhatsApp, run the bot. Includes the optional Docker/Podman sandbox for the `exec` plugin.
+- [Configuration](./configuration.md): prefix, sticker, session, plugin, logger, and the `exec` sandbox (Docker/Podman) configuration.
 - [Plugin Development](./plugin-development.md): building command and event plugins, plugin lifecycle, plugin API.
 - [Event Development](./event-development.md): the internal event bus, built-in events, writing new event modules.
 - [API Reference](./api-reference.md): Bot API, Context API, Plugin API, Utility API.

@@ -102,6 +102,26 @@ export default {
       enabled: envBool('SELF_BOT_ENABLED', false),
    },
 
+   /**
+    * Sandbox for the developer `exec` plugin (see src/plugins/developer/exec.js).
+    * Runs the command inside a throwaway container (docker/podman) by default,
+    * falling back to host execution only when no runtime is installed. `mode`
+    * can be 'auto' | 'docker' | 'podman' | 'host'. This is plugin-only config;
+    * it never affects the core.
+    */
+   exec: {
+      mode: env('EXEC_SANDBOX_MODE', 'auto'),
+      image: env('EXEC_SANDBOX_IMAGE', 'debian:bookworm-slim'),
+      timeoutMs: envInt('EXEC_TIMEOUT', 15_000),
+      maxOutput: envInt('EXEC_MAX_OUTPUT', 4000),
+      memory: env('EXEC_SANDBOX_MEMORY', '256m'),
+      cpus: env('EXEC_SANDBOX_CPUS', '0.5'),
+      pidsLimit: envInt('EXEC_SANDBOX_PIDS_LIMIT', 64),
+      network: envBool('EXEC_SANDBOX_NETWORK', false),
+      readOnly: envBool('EXEC_SANDBOX_READONLY', true),
+      user: env('EXEC_SANDBOX_USER', '65534:65534'),
+   },
+
    /** Plugin loader settings. */
    plugins: {
       /** Directory recursively scanned for `<category>/<name>.js` plugin files. */

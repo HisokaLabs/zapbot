@@ -43,12 +43,27 @@
  */
 
 /**
+ * @typedef {object} ExecConfig
+ * @property {'auto' | 'docker' | 'podman' | 'host'} mode Sandbox runtime selection; `auto` probes docker → podman → host.
+ * @property {string} image Container image for `docker`/`podman` modes (must include `bash` + `timeout`).
+ * @property {number} timeoutMs Hard limit for a single command.
+ * @property {number} maxOutput Cap on returned output length (chat-friendly).
+ * @property {string} memory Container memory limit (e.g. `256m`).
+ * @property {string} cpus Container CPU quota (e.g. `0.5`).
+ * @property {number} pidsLimit Container PID limit.
+ * @property {boolean} network When false, the container has no network (`--network=none`).
+ * @property {boolean} readOnly When true, the container rootfs is read-only (writes only to a tmpfs `/tmp`).
+ * @property {string} user UID:GID the command runs as inside the container.
+ */
+
+/**
  * @typedef {object} BotConfig
  * @property {string | string[]} prefix Single prefix, multiple prefixes, or a custom list — always normalized to an array.
  * @property {BotSessionConfig} session
  * @property {AutoStickerConfig} autoSticker
  * @property {DeveloperConfig} developer
  * @property {SelfBotConfig} selfBot
+ * @property {ExecConfig} exec
  * @property {{ directory: string }} plugins
  * @property {{ level: LogLevel }} logger
  */

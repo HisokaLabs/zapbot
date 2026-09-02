@@ -27,6 +27,16 @@ All runtime behavior is controlled by [`config/config.js`](../config/config.js),
 | `LOG_LEVEL`                         | `logger.level`                   | `info`                 |
 | `LOG_PRETTY`                        | `logger.pretty`                  | `true`                 |
 | `LOG_NAME`                          | `logger.name`                    | `ZapBot`               |
+| `EXEC_SANDBOX_MODE`                 | `exec.mode`                      | `auto`                 |
+| `EXEC_SANDBOX_IMAGE`                | `exec.image`                     | `debian:bookworm-slim` |
+| `EXEC_TIMEOUT`                      | `exec.timeoutMs`                 | `15000`                |
+| `EXEC_MAX_OUTPUT`                   | `exec.maxOutput`                 | `4000`                 |
+| `EXEC_SANDBOX_MEMORY`               | `exec.memory`                    | `256m`                 |
+| `EXEC_SANDBOX_CPUS`                 | `exec.cpus`                      | `0.5`                  |
+| `EXEC_SANDBOX_PIDS_LIMIT`           | `exec.pidsLimit`                 | `64`                   |
+| `EXEC_SANDBOX_NETWORK`              | `exec.network`                   | `false`                |
+| `EXEC_SANDBOX_READONLY`             | `exec.readOnly`                  | `true`                 |
+| `EXEC_SANDBOX_USER`                 | `exec.user`                      | `65534:65534`          |
 
 ## Prefix configuration
 
@@ -216,6 +226,48 @@ zapo's `WaClient` accepts far more than what `createClient()` currently wires up
 Inside `syntheticUi`, the capability gates `channels` / `communities` / `business` default to **`false`**: only flip one on if the paired account genuinely has that surface; firing e.g. a channel event on an account without channels is a detectable tell. Batches only upload once connected **and** `credentials.meJid` is populated (registration complete): anything committed before that is silently dropped, not queued.
 
 Exposed at `this.client.wam` (three methods): `commit(name, payload)` to inject a WAM event manually, `flush()` to force an upload, `dispose()` on shutdown. The plugin is entirely optional; messaging/calling works with it removed from `plugins: []`.
+
+## Exec sandbox configuration
+
+```js
+export default {
+   exec: {
+      mode: 'auto', // 'auto' | 'docker' | 'podman' | 'host'
+      image: 'debian:bookworm-slim',
+      timeoutMs: 15000,
+      maxOutput: 4000,
+      memory: '256m',
+      cpus: '0.5',
+      pidsLimit: 64,
+      network: false,
+      readOnly: true,
+      user: '65534:65534',
+   },
+};
+```
+
+Controls the developer-only `exec`/`shell` command (`src/plugins/developer/exec.js`). That plugin **replaced the old binary allowlist** with an actual sandbox: the command is executed inside a throwaway container so a malicious command cannot touch the host.
+
+- `mode` picks the runtime:
+   - `auto` (default) — probe for `docker`, then `podman`; if neither is installed, **fall back to running the command directly on the host** (unsandboxed). The plugin warns loudly when this happens.
+   - `docker` / `podman` — require that runtime and refuse to run if it's missing.
+   - `host` — explicit opt-out: run on the host with only a timeout and output cap, no isolation. Use only if you accept the risk.
+- The container is built with `--rm --cap-drop=ALL --security-opt=no-new-privileges`, resource caps (`memory`/`cpus`/`pidsLimit`), an unprivileged `user`, `--network=none` (unless `network: true`), a read-only rootfs (unless `readOnly: false`) with a bounded tmpfs at `/tmp` as the working directory, and no host volume mounts. `timeout` is PID 1 inside the container, so a runaway is always killed at `timeoutMs` even if the CLI is interrupted.
+- `image` must contain `bash` and `timeout` (both are present in the default `debian:bookworm-slim` and in most Debian/Alpine images).
+
+### Sandbox approaches other than Docker
+
+Docker is only the default; the plugin's `mode` already supports **Podman** as a drop-in, rootless alternative (`mode: 'podman'`, same flags). Other isolation options you can wire in by editing `containerArgs()` in the plugin file:
+
+| Approach                   | What it is                                                        | Strengths / tradeoffs                                                          |
+| -------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Podman**                 | Rootless, daemonless OCI runtime, CLI-compatible with Docker.     | Drop-in here (`mode: 'podman'`); no root daemon = smaller attack surface.      |
+| **nsjail**                 | Google's process jail (namespaces + seccomp + cgroups + rlimits). | Very light, no image pull, ideal for single commands; needs a small wrapper.   |
+| **bubblewrap**             | Unprivileged sandbox used by Flatpak (bwrap).                     | No daemon/root; great for one-shot commands; you assemble the namespace flags. |
+| **firejail**               | SUID sandboxing with easy profiles.                               | Simple CLI (`firejail --noprofile --net=none ...`); SUID binary is its caveat. |
+| **gVisor/runsc**           | User-space kernel ("sandboxed container") under Docker/Podman.    | Stronger than runc isolation; swap the runtime instead of changing code.       |
+| **systemd-nspawn**         | Lightweight container manager (systemd systems only).             | No image registry needed (`-D` a directory); Linux/systemd hosts only.         |
+| **WSL2 / Windows Sandbox** | Windows-native isolation (this bot's dev OS).                     | `wsl -e bash -c ...` or Windows Sandbox config; Windows-only.                  |
 
 ## Plugin configuration
 
