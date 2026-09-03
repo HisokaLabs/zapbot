@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/DikaArdnt/zapbot/blob/main/docs/README.md
+    about: Read the installation, configuration, and development docs before opening an issue.
+  - name: Contributing guide
+    url: https://github.com/DikaArdnt/zapbot/blob/main/CONTRIBUTING.md
+    about: Scope rules, coding rules, and how to submit a pull request.

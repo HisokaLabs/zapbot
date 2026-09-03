@@ -27,6 +27,15 @@ Read [AGENTS.md](./AGENTS.md): it's the authoritative guide to this project's ar
 - Plugins must stay isolated: no plugin-to-plugin imports, no reaching into another plugin's internals, no direct `src/core/*` access, only what's reachable through `ctx`.
 - An event's payload shape is a contract once shipped: add fields, don't remove or repurpose them.
 
+## Scope: this is a base script — keep changes minimal
+
+This repository is a **base script** built on top of [`zapo-js`](https://github.com/vinikjkkj/zapo). It is meant to stay close to the upstream design so it can keep tracking upstream updates. Therefore:
+
+- ✅ **Welcome:** logical bug fixes, new plugins, new event modules, utility functions, documentation, and config improvements.
+- ❌ **Not welcome:** large fundamental rewrites — restructuring the event bus, changing built-in event payload shapes, renaming or redesigning public APIs, or re-architecting `src/core/*` — unless a real, provable bug forces it and the change is discussed in an issue first.
+- Fixing a **logical bug** is fine anywhere, including `src/core/*` if that's where the bug lives, but keep the diff as small as possible and explain in the PR why the change is needed.
+- The issue and pull request templates (`.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`) ask you to confirm the scope of your change; please answer those checkboxes honestly.
+
 ## Making changes
 
 1. Create a branch for your change.
@@ -56,15 +65,17 @@ Keep the subject line imperative and under ~72 chars, e.g. `feat: add downloader
 
 ## Submitting a pull request
 
-- Push your branch and open a pull request against `main` at [https://github.com/DikaArdnt/zapbot](https://github.com/DikaArdnt/zapbot).
+- Push your branch and open a pull request against `main` at [https://github.com/DikaArdnt/zapbot](https://github.com/DikaArdnt/zapbot). The [pull request template](./.github/PULL_REQUEST_TEMPLATE.md) is applied automatically — fill it in, including the scope checkboxes.
 - Describe what changed and why; link any related issue.
 - Make sure `npm run lint` and `npm run format:check` pass.
 - Be ready to answer questions or make revisions during review.
 
 ## Reporting bugs / requesting features
 
-Open an issue at [https://github.com/DikaArdnt/zapbot](https://github.com/DikaArdnt/zapbot) describing:
+Open an issue at [https://github.com/DikaArdnt/zapbot](https://github.com/DikaArdnt/zapbot). The [bug report](./.github/ISSUE_TEMPLATE/bug_report.yml) and [feature request](./.github/ISSUE_TEMPLATE/feature_request.yml) templates are applied automatically. Before opening one:
 
-- What you expected to happen vs. what actually happened.
-- Steps to reproduce (for bugs), including your Node version and OS.
-- Relevant config (redact any secrets/session data first).
+- Check the [docs](./docs/README.md) and search existing issues first.
+- For bugs: describe what you expected vs. what actually happened, steps to reproduce, your Node version and OS.
+- For features: prefer proposing a new plugin or event module over a core change.
+- Redact any secrets/session data first.
+- Remember the scope: this is a base script, so issues asking to redesign core fundamentals are out of scope.

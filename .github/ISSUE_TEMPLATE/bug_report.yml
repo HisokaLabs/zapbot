@@ -1,0 +1,80 @@
+name: Bug report
+description: Report a bug or unexpected behavior in the bot
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue.
+
+        > ⚠️ **Read first:** this project is a **base script** built on top of
+        > [`zapo-js`](https://github.com/vinikjkkj/zapo). We happily fix
+        > **logical bugs**, but we do **not** accept requests to rewrite core
+        > fundamentals — the event bus, plugin system, shared event payloads,
+        > or public APIs. If your issue requires that, open a discussion first.
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: When I send `.sticker` on a video, the bot crashes instead of converting...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce it?
+      placeholder: |
+        1. Start the bot (`npm start`)
+        2. Send command `.xxx` with ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / error output (optional)
+      description: Paste console output. Redact any secrets, session data, or phone numbers first.
+      render: shell
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      description: Output of `node -v`.
+      placeholder: e.g. 20.11.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      description: e.g. Windows 11, Ubuntu 22.04, macOS.
+    validations:
+      required: true
+  - type: dropdown
+    id: pairing
+    attributes:
+      label: WhatsApp pairing method
+      options:
+        - QR code
+        - Pairing code
+        - Not sure
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: I can reproduce this on the latest code from `main`
+        - label: This is a bug report — I am not asking to redesign core fundamentals
+          required: true
