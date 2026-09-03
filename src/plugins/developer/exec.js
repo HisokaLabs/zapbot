@@ -128,9 +128,9 @@ export default {
          const output = truncate(body || '(no output)', settings.maxOutput);
          const note =
             runtime.kind === 'host' && runtime.fallback
-               ? '⚠️ No container runtime available — command executed on HOST without isolation.\n'
+               ? '⚠️ *No container runtime available — command executed on HOST without isolation.*\n'
                : '';
-         await command.reply(`${note}\`\`\`sh\n${output}\n\`\`\``);
+         await command.reply(`${note}\n\n${output}`);
       } catch (error) {
          const message = truncate(formatExecError(error, settings.timeoutMs), settings.maxOutput);
          await command.reply(`Error: ${message}`);
