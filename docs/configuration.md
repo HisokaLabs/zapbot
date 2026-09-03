@@ -11,6 +11,7 @@ config/
 ├── selfBot.js       # owner-only gate
 ├── developer.js     # developer phone numbers
 ├── pendingCommand.js# pending-command timeout
+├── eval.js          # developer eval sandbox
 ├── exec.js          # developer exec sandbox
 ├── plugins.js       # plugin loader directory
 └── logger.js        # logger level/format/name
@@ -74,6 +75,9 @@ Each config file calls `import 'dotenv/config'` and parses its variables with [`
 | `BOT_DEVELOPER_NUMBER`              | `developer.numbers`              | `''`                   | Comma-separated; parsed into an array.               |
 | `SELF_BOT_ENABLED`                  | `selfBot.enabled`                | `false`                |                                                      |
 | `PENDING_COMMAND_TIMEOUT`           | `pendingCommand.timeout`         | `60000`                |                                                      |
+| `EVAL_MODE`                         | `eval.mode`                      | `safe`                 | `safe` \| `full` (enforced).                         |
+| `EVAL_TIMEOUT`                      | `eval.timeoutMs`                 | `5000`                 |                                                      |
+| `EVAL_MAX_OUTPUT`                   | `eval.maxOutput`                 | `4000`                 |                                                      |
 | `EXEC_SANDBOX_MODE`                 | `exec.mode`                      | `auto`                 | `auto` \| `docker` \| `podman` \| `host` (enforced). |
 | `EXEC_SANDBOX_IMAGE`                | `exec.image`                     | `debian:bookworm-slim` |                                                      |
 | `EXEC_TIMEOUT`                      | `exec.timeoutMs`                 | `15000`                |                                                      |
@@ -304,6 +308,22 @@ export default {
 ```
 
 Controls `core/PendingCommandManager.js`, the transient in-memory store used by plugins that need a follow-up message (e.g. "send me the image now"). The timeout can also be overridden per-entry via `ctx.pending.wait(command, kinds, { timeout })`.
+
+## Eval sandbox configuration
+
+`config/eval.js` controls the developer-only `eval` command (`src/plugins/developer/eval.js`):
+
+```js
+export default {
+   mode: 'safe', // 'safe' | 'full'
+   timeoutMs: 5000,
+   maxOutput: 4000,
+};
+```
+
+- `mode: 'safe'` (default) runs code in an isolated `vm` context inside a worker thread, with no Node host globals (`process`, `require`, `fs`, `fetch`, ...). A runaway is hard-killed via `worker.terminate()`, and a `process.exit()` escape only takes down the worker, never the bot.
+- `mode: 'full'` runs a **native `eval` in the bot process** — full access to process globals and the plugin's own module variables, and **no isolation**: `process.exit()` kills the bot and an infinite loop freezes it. Use at your own risk.
+- The per-invocation `--safe` / `--full` flag overrides `mode` for that one evaluation.
 
 ## Exec sandbox configuration
 
