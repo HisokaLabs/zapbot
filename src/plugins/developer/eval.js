@@ -174,6 +174,8 @@ parentPort.on('message', ({ code }) => {
  * @returns {string}
  */
 function extractCode(command) {
+   if (command.rest !== undefined) return command.rest.trim();
+
    const text = command.text ?? '';
    const prefix = command.prefix ?? '';
    const name = command.command ?? '';

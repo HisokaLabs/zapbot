@@ -94,7 +94,7 @@ export default {
          return;
       }
 
-      const input = command.args.join(' ').trim();
+      const input = (command.rest ?? command.args.join(' ')).trim();
       if (!input) {
          await command.reply('Please enter a command to run.\nExample: .exec ls -la  |  $ ls -la');
          return;

@@ -136,7 +136,13 @@
  * Passed to `BotPlugin#execute` for a matched command. Extends
  * {@link MessageContext} with the parsed prefix/command/args.
  *
- * @typedef {MessageContext & { prefix: string, command: string, args: string[] }} CommandContext
+ * `args` is whitespace-split (including newlines) for simple token-based
+ * commands. `rest` is the raw text that followed the command name (or trigger
+ * symbol) with its original formatting — newlines, indentation and quoting
+ * preserved — for commands that need multi-line input (eval, exec, ...).
+ * Prefer `rest` over `args.join(' ')` whenever the original formatting matters.
+ *
+ * @typedef {MessageContext & { prefix: string, command: string, args: string[], rest: string }} CommandContext
  */
 
 /**

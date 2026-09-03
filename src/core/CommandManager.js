@@ -66,7 +66,7 @@ export class CommandManager {
 
    /**
     * @param {string} text
-    * @returns {{ symbol: string, command: string, args: string[] } | undefined}
+    * @returns {{ symbol: string, command: string, args: string[], rest: string } | undefined}
     */
    matchTrigger(text) {
       for (const [symbol, command] of this.triggers) {
@@ -76,6 +76,7 @@ export class CommandManager {
                symbol,
                command,
                args: argsText.length ? argsText.split(/\s+/) : [],
+               rest: argsText,
             };
          }
       }

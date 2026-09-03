@@ -38,12 +38,15 @@ export function formatDuration(ms) {
  *
  * @param {string} text
  * @param {string} prefix
- * @returns {{ command: string, args: string[] }}
+ * @returns {{ command: string, args: string[], rest: string }}
  */
 export function parseCommand(text, prefix) {
    const withoutPrefix = text.slice(prefix.length).trim();
-   const [command = '', ...args] = withoutPrefix.split(/\s+/);
-   return { command: command.toLowerCase(), args };
+   const match = /^(\S+)([\s\S]*)$/.exec(withoutPrefix);
+   const command = match ? match[1] : withoutPrefix;
+   const rest = match ? match[2].trim() : '';
+   const args = rest ? rest.split(/\s+/) : [];
+   return { command: command.toLowerCase(), args, rest };
 }
 
 /**

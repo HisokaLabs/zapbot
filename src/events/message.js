@@ -21,9 +21,9 @@ export default {
             if (prefix) {
                ctx.pending.clear(chatJid, senderJid);
 
-               const { command, args } = parseCommand(text, prefix);
+               const { command, args, rest } = parseCommand(text, prefix);
                if (command && ctx.commands.has(command)) {
-                  const commandContext = { ...messageContext, prefix, command, args };
+                  const commandContext = { ...messageContext, prefix, command, args, rest };
                   ctx.events.emit('messageCreate', messageContext);
                   ctx.events.emit('message', messageContext);
                   ctx.events.emit('command', commandContext);
@@ -41,6 +41,7 @@ export default {
                   prefix: trigger.symbol,
                   command: trigger.command,
                   args: trigger.args,
+                  rest: trigger.rest,
                };
                ctx.events.emit('messageCreate', messageContext);
                ctx.events.emit('message', messageContext);
