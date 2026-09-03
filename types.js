@@ -164,7 +164,12 @@
  */
 
 /**
- * @typedef {(ctx: MessageContext, next: () => Promise<void>) => (void | Promise<void>)} Middleware
+ * Runs in order against every inbound message before command parsing and the
+ * `messageCreate`/`message`/`command` events fire. Call `next()` to continue
+ * the chain (it resolves to the downstream return value); return without
+ * calling `next()` to halt the chain.
+ *
+ * @typedef {(message: MessageContext, next: () => Promise<any>) => (any | Promise<any>)} Middleware
  */
 
 /**

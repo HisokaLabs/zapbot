@@ -10,29 +10,42 @@ export class MiddlewareManager {
    /** @param {Middleware} middleware */
    use(middleware) {
       if (typeof middleware !== 'function') {
-         throw new TypeError('Middleware must be a function: (ctx, next) => Promise<void> | void');
+         throw new TypeError('Middleware must be a function: (ctx, next) => any | Promise<any>');
       }
       this.stack.push(middleware);
    }
 
    /**
-    * Runs the full stack against `ctx`, in registration order.
-    * @param {MessageContext} ctx
-    * @returns {Promise<void>}
+    * @returns {(ctx: MessageContext, next?: (ctx: MessageContext) => any) => Promise<any>}
     */
-   async execute(ctx) {
-      let index = -1;
+   compose() {
+      const stack = this.stack;
 
-      /** @param {number} i */
-      const dispatch = async i => {
-         if (i <= index) throw new Error('next() called multiple times');
-         index = i;
-         const middleware = this.stack[i];
-         if (!middleware) return;
-         await middleware(ctx, () => dispatch(i + 1));
+      return async function composed(ctx, next) {
+         let index = -1;
+
+         /** @param {number} i */
+         const dispatch = async i => {
+            if (i <= index) throw new Error('next() called multiple times');
+            index = i;
+
+            const middleware = i < stack.length ? stack[i] : next;
+            if (!middleware) return;
+
+            return await middleware(ctx, () => dispatch(i + 1));
+         };
+
+         return await dispatch(0);
       };
+   }
 
-      await dispatch(0);
+   /**
+    * @param {MessageContext} ctx
+    * @param {function(MessageContext): any} [final]
+    * @returns {Promise<any>}
+    */
+   async execute(ctx, final) {
+      return await this.compose()(ctx, final);
    }
 }
 

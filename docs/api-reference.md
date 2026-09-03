@@ -9,9 +9,10 @@ Module resolution uses Node's native `package.json#imports` field, no `jsconfig.
 ```json
 "imports": {
   "#types": "./types.js",
-  "#config": "./config/*.js",
+  "#config/*.js": "./config/*.js",
   "#core/*.js": "./src/core/*.js",
   "#events/*.js": "./src/events/*.js",
+  "#middlewares/*.js": "./src/middlewares/*.js",
   "#plugins/*.js": "./src/plugins/*.js",
   "#utils/*.js": "./src/utils/*.js"
 }
@@ -35,8 +36,9 @@ import config from '#config/index.js';
 
 const bot = new Bot(config);
 
-bot.use(async (ctx, next) => {
-   /* middleware */ await next();
+bot.use(async (message, next) => {
+   /* middleware: message is a MessageContext */
+   await next();
 });
 await bot.start(); // autoloads events, autoloads plugins, connects to WhatsApp
 await bot.stop(); // graceful disconnect (keeps credentials)
@@ -53,7 +55,7 @@ await bot.stop(); // graceful disconnect (keeps credentials)
 
 ## Context API
 
-`BotContext` (see [plugin-development.md](./plugin-development.md#plugin-api) for the member table) is the object passed to every plugin's `init`, every event module's `register`, and every middleware. It is built once by `Bot.buildContext()` and reused: mutating something reachable from `ctx` (e.g. `ctx.config.set(...)`) is visible everywhere immediately.
+`BotContext` (see [plugin-development.md](./plugin-development.md#plugin-api) for the member table) is the object passed to every plugin's `init` and every event module's `register`. It is built once by `Bot.buildContext()` and reused: mutating something reachable from `ctx` (e.g. `ctx.config.set(...)`) is visible everywhere immediately. Middleware receive a `MessageContext` instead — its `message.ctx` field is that same `BotContext` (see [Middleware](#middleware)).
 
 ### `MessageContext` / `CommandContext`
 
@@ -108,6 +110,34 @@ Built by `events/media.js` for any message carrying an attachment:
       downloadBytes()); // buffer in memory (small media only)
 }
 ```
+
+## Middleware
+
+Middleware run in order against every inbound message, before command parsing and before `messageCreate`/`message`/`command` events are emitted. They form a Koa-style onion stack managed by `core/MiddlewareManager.js`.
+
+```js
+/** @type {import('#types').Middleware} */
+async function myMiddleware(message, next) {
+   // message is a MessageContext (message.ctx is the BotContext)
+
+   if (shouldReject(message)) return; // halt: no next(), no command, no reply
+
+   message.text = message.text.trim(); // transform before the rest of the chain
+
+   const result = await next(); // continue; resolves to the downstream return value
+   return result;
+}
+
+bot.use(myMiddleware); // shorthand for bot.middleware.use(myMiddleware)
+```
+
+- `message` is the parsed `MessageContext` (see above).
+- `next()` continues the chain and resolves to whatever the downstream middleware/final handler returned. Call it at most once — calling it twice throws.
+- **Halt** the chain by returning without calling `next()`: downstream middleware, command dispatch, and the message events never run, and no reply is sent (`src/middlewares/selfBot.js` does this).
+- **Transform** by mutating `message` before `next()` (e.g. `shoutTransform` in `src/middlewares/testing.js`).
+- **Lifecycle** by `await next()` and using the result (e.g. `timingLifecycle` in `src/middlewares/testing.js`).
+
+`bot.use(mw)` is shorthand for `bot.middleware.use(mw)`. `ctx.middleware.execute(message, final?)` runs the whole stack with an optional final handler — `events/message.js` passes `processMessage` as that final step.
 
 ## Plugin API
 

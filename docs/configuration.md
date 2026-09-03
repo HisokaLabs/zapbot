@@ -276,13 +276,9 @@ export default {
 ```
 
 - `enabled: false` (the default) means everyone can use the bot.
-- `enabled: true` turns on owner-only mode: every incoming message must come from the bot's own account (its own number, i.e. `fromMe`) or from a number listed in `developer.numbers` (`BOT_DEVELOPER_NUMBER`). Anything else is rejected — the middleware throws, so no command runs and no message is sent back.
+- `enabled: true` turns on owner-only mode: every incoming message must come from the bot's own account (its own number, i.e. `fromMe`) or from a number listed in `developer.numbers` (`BOT_DEVELOPER_NUMBER`). Anything else is rejected — the middleware halts the chain by _not_ calling `next()` (it does **not** throw), so no command runs and no message is sent back.
 
-The gate is implemented as a middleware at `src/middlewares/selfBot.js`, registered in `src/index.js` via `bot.use(selfBotMiddleware)`. It reads `selfBot.enabled` fresh on every message, so you can toggle it at runtime:
-
-```js
-ctx.config.set('selfBot.enabled', true);
-```
+The gate is implemented as a middleware at `src/middlewares/selfBot.js`, registered in `src/index.js` via `bot.use(selfBotGuard)`. It reads `selfBot.enabled` fresh on every message through the global `config()` helper (`config('selfBot.enabled', false)`). Because it reads the boot-time config rather than `ctx.config`, calling `ctx.config.set('selfBot.enabled', true)` at runtime does **not** affect this gate — change `config/selfBot.js` or `SELF_BOT_ENABLED` instead.
 
 ## Developer configuration
 

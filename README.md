@@ -15,7 +15,8 @@ An event-driven, plugin-based WhatsApp bot framework for Node.js, built on top o
 - **Middleware support**: Extend bot behavior with Koa-style middleware:
 
 ```js
-bot.use(async (ctx, next) => {
+bot.use(async (message, next) => {
+   // message is a MessageContext; await next() to continue, omit it to halt
    await next();
 });
 ```

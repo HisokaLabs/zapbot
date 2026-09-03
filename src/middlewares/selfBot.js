@@ -5,10 +5,10 @@ import { isSelfBotAllowed } from '#utils/selfBot.js';
  *
  * @type {import('#types').Middleware}
  */
-export default async function selfBotMiddleware(message, next) {
-   if (!message.ctx.config.get('selfBot.enabled', false)) return next();
+export default async function selfBotGuard(message, next) {
+   if (!config('selfBot.enabled', false)) return await next();
 
-   if (isSelfBotAllowed(message)) return next();
+   if (isSelfBotAllowed(message)) return await next();
 
-   throw new Error('Self-bot is not allowed in this context.');
+   // Not allowed: stop the chain by not calling next(). No error, no reply.
 }

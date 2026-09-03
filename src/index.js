@@ -1,10 +1,16 @@
 import configData from '#config/index.js';
 import { Bot } from '#core/Bot.js';
-import selfBotMiddleware from '#middlewares/selfBot.js';
+import selfBotGuard from '#middlewares/selfBot.js';
+import { blockGuard, shoutTransform, timingLifecycle } from '#middlewares/testing.js';
 
 const bot = new Bot(configData);
 
-bot.use(selfBotMiddleware);
+bot.use(selfBotGuard);
+
+// Testing middlewares (debugging purposes)
+bot.use(blockGuard);
+bot.use(shoutTransform);
+bot.use(timingLifecycle);
 
 process.on('SIGINT', async () => {
    bot.logger.warn('Shutting down (SIGINT)...');
