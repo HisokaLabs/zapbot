@@ -1,11 +1,13 @@
 import configData from '#config/index.js';
 import { Bot } from '#core/Bot.js';
+import pendingCommand from '#middlewares/pending.js';
 import selfBotGuard from '#middlewares/selfBot.js';
 import { blockGuard, shoutTransform, timingLifecycle } from '#middlewares/testing.js';
 
 const bot = new Bot(configData);
 
 bot.use(selfBotGuard);
+bot.use(pendingCommand);
 
 // Testing middlewares (debugging purposes)
 bot.use(blockGuard);

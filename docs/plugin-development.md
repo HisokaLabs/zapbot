@@ -80,7 +80,7 @@ See [api-reference.md](./api-reference.md#messagecontext--commandcontext) for th
 
 ### Pending commands (multi-step input)
 
-When a command needs follow-up input that isn't on the triggering message (e.g. `.sticker` typed with no media attached), register a **pending command** with the one-liner `ctx.pending.wait(command, ...)` instead of hardcoding a "wait for next message" flow. The message handler then resumes the _same_ `execute()` on the user's next message — no duplicate handler, no `.sticker` re-typed by the user.
+When a command needs follow-up input that isn't on the triggering message (e.g. `.sticker` typed with no media attached), register a **pending command** with the one-liner `ctx.pending.wait(command, ...)` instead of hardcoding a "wait for next message" flow. A middleware then rewrites the user's follow-up message back into the original command and the message handler resumes the _same_ `execute()` — no duplicate handler, no `.sticker` re-typed by the user.
 
 ```js
 async execute(command) {
@@ -110,11 +110,11 @@ ctx.pending.wait(command, 'text', { data: { targetLang: 'id' } }); // + extra co
 
 The longer `ctx.pending.set({ chatId, userId, command, prefix, args, expectedInput, data, timeout })` form still exists for cases where you need full manual control (e.g. setting a pending command for a user other than the message sender).
 
-How it behaves, automatically (see `events/message.js`):
+How it behaves, automatically (`src/middlewares/pending.js` + `events/message.js`):
 
-- **Awaited input arrives** → the pending command is consumed and `execute()` is called again with the new message as `command` (so `command.raw`, `command.quoted`, `command.isMedia`, ... reflect the follow-up message, while `command.command`/`args`/`prefix` are the original invocation). The follow-up message is _not_ processed as a normal message again, so there's no double response.
+- **Awaited input arrives** → the pending entry is consumed and the follow-up message's `text` is rewritten back into the original invocation (`prefix + command + args`, plus any follow-up text), so the normal command executor in `events/message.js` runs the same `execute()` exactly once — no direct dispatch from the middleware. `command.raw`/`command.quoted`/`command.isMedia` still reflect the follow-up message; `command.command`/`args`/`prefix` are the original invocation (any follow-up text lands at the end of `command.args`/`command.text`).
 - **Wrong input arrives** (e.g. text when waiting for `'image'`) → the pending command is dropped and the message flows through as a normal message.
-- **A new command arrives** → the pending command is dropped and the new command runs.
+- **A new command arrives** → the pending command is dropped and the new command runs (the middleware leaves command-looking messages untouched, so the event's own prefix/trigger path clears the pending entry).
 - **Timeout** (default 60s, `pendingCommand.timeout` in config) → the pending command is dropped lazily on the next message.
 
 `expectedInput` matches the `MessageKind` of the message itself _or_ its quoted message, so `wait(command, ['image', 'gif', 'video'])` accepts both "send an image" and "reply to an image with a caption".

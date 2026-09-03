@@ -134,7 +134,7 @@ bot.use(myMiddleware); // shorthand for bot.middleware.use(myMiddleware)
 - `message` is the parsed `MessageContext` (see above).
 - `next()` continues the chain and resolves to whatever the downstream middleware/final handler returned. Call it at most once — calling it twice throws.
 - **Halt** the chain by returning without calling `next()`: downstream middleware, command dispatch, and the message events never run, and no reply is sent (`src/middlewares/selfBot.js` does this).
-- **Transform** by mutating `message` before `next()` (e.g. `shoutTransform` in `src/middlewares/testing.js`).
+- **Transform** by mutating `message` before `next()` (e.g. `shoutTransform` in `src/middlewares/testing.js`). Pending-command resume is the canonical example: `src/middlewares/pending.js` consumes the pending entry and rewrites `message.text` back into the original invocation so the event's command executor dispatches it — it never calls `ctx.commands.dispatch` itself.
 - **Lifecycle** by `await next()` and using the result (e.g. `timingLifecycle` in `src/middlewares/testing.js`).
 
 `bot.use(mw)` is shorthand for `bot.middleware.use(mw)`. `ctx.middleware.execute(message, final?)` runs the whole stack with an optional final handler — `events/message.js` passes `processMessage` as that final step.

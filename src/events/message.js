@@ -1,17 +1,6 @@
 import { matchPrefix, parseCommand } from '#utils/helper.js';
 
 /**
- * @param {import('#types').MessageContext} message
- * @param {import('#types').MessageKind[]} expectedInput
- * @returns {boolean}
- */
-function matchesExpectedInput(message, expectedInput) {
-   const kinds = new Set(expectedInput);
-   if (kinds.has(message.type)) return true;
-   return Boolean(message.quoted && kinds.has(message.quoted.type));
-}
-
-/**
  *
  * @type {import('#types').BotEventModule}
  */
@@ -22,7 +11,7 @@ export default {
    register(ctx) {
       /**
        * @param {import('#types').MessageContext} messageContext
-       * @returns {Promise<{ type: string, command?: string }>}
+       * @returns {Promise<{ type: 'command', command: string } | { type: 'message' }>}
        */
       async function processMessage(messageContext) {
          const { chatJid, senderJid, fromMe, text } = messageContext;
@@ -62,36 +51,6 @@ export default {
             }
          }
 
-         if (!fromMe) {
-            const pending = ctx.pending.get(chatJid, senderJid);
-            if (pending) {
-               if (matchesExpectedInput(messageContext, pending.expectedInput)) {
-                  ctx.pending.consume(chatJid, senderJid);
-
-                  const commandContext = {
-                     ...messageContext,
-                     ...(pending.data ?? {}),
-                     prefix: pending.prefix ?? '',
-                     command: pending.command,
-                     args: pending.args ?? [],
-                  };
-
-                  try {
-                     await ctx.commands.dispatch(commandContext);
-                  } finally {
-                     ctx.pending.clear(chatJid, senderJid);
-                  }
-
-                  return { type: 'pending', command: pending.command };
-               }
-
-               // Wrong input voids the pending command; the message then
-               // flows through normal processing below.
-               ctx.pending.clear(chatJid, senderJid);
-            }
-         }
-
-         // 3) Normal processing.
          ctx.events.emit('messageCreate', messageContext);
          ctx.events.emit('message', messageContext);
 
