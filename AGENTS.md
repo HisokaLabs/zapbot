@@ -33,7 +33,7 @@ There is no `jsconfig.json`/`tsconfig.json` and no bundler. Aliases come from `p
 ```json
 "imports": {
   "#types": "./types.js",
-  "#config": "./config/config.js",
+  "#config/*.js": "./config/*.js",
   "#core/*.js": "./src/core/*.js",
   "#events/*.js": "./src/events/*.js",
   "#plugins/*.js": "./src/plugins/*.js",

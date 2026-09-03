@@ -3,7 +3,7 @@ See @AGENTS.md for architecture, coding rules, plugin/event conventions, and com
 ## Docs map
 
 - [docs/installation.md](./docs/installation.md): setup, running the bot.
-- [docs/configuration.md](./docs/configuration.md): `config/config.js` reference.
+- [docs/configuration.md](./docs/configuration.md): the `config/` directory reference (Laravel-style config).
 - [docs/plugin-development.md](./docs/plugin-development.md): writing a `BotPlugin`.
 - [docs/event-development.md](./docs/event-development.md): the event bus, writing a `BotEventModule`.
 - [docs/api-reference.md](./docs/api-reference.md): Bot/Context/Plugin/Utility API.

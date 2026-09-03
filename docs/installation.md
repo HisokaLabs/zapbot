@@ -35,7 +35,7 @@ If `npm install` fails while building `better-sqlite3` or `sharp`, the fastest f
 
 ## Setup environment
 
-The framework has **no required environment variables**: everything lives in [`config/config.js`](../config/config.js). Review it and adjust at least:
+The framework has **no required environment variables**: everything lives in the [`config/`](../config/) directory (Laravel-style, one file per section, merged by [`config/index.js`](../config/index.js)). Review it and adjust at least:
 
 - `session.storePath`: where the SQLite auth state is written (default `./.auth/state.sqlite`).
 - `session.pairing`: `'qr'` (default) or `'code'`.
@@ -52,7 +52,7 @@ npm start
 ```
 
 - **QR pairing** (default): a QR code prints in your terminal. Open **WhatsApp → Linked devices → Link a device** on your phone and scan it.
-- **Pairing code**: set `session.pairing: 'code'` and `session.phoneNumber: '<countrycode><number>'` (digits only) in `config/config.js`, then start the bot: an 8-character code prints in the terminal (`XXXX-XXXX`). Open **WhatsApp → Linked devices → Link with phone number instead** and enter it.
+- **Pairing code**: set `session.pairing: 'code'` and `session.phoneNumber: '<countrycode><number>'` (digits only) in `config/session.js`, then start the bot: an 8-character code prints in the terminal (`XXXX-XXXX`). Open **WhatsApp → Linked devices → Link with phone number instead** and enter it.
 
 Once paired, credentials are persisted to `session.storePath`. Subsequent `npm start` runs reconnect automatically: no QR/code needed again unless you unlink the device from your phone.
 
@@ -76,7 +76,7 @@ Install a runtime only if you intend to use the `exec` plugin:
 docker pull debian:bookworm-slim   # or: podman pull debian:bookworm-slim
 ```
 
-All sandbox knobs (`mode`, `image`, `timeout`, resource limits, network, read-only, user) live under the `exec` key in `config/config.js`; see [configuration.md](./configuration.md#exec-sandbox-configuration) for the full reference.
+All sandbox knobs (`mode`, `image`, `timeout`, resource limits, network, read-only, user) live in `config/exec.js`; see [configuration.md](./configuration.md#exec-sandbox-configuration) for the full reference.
 
 ## Run the bot
 

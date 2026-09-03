@@ -196,4 +196,4 @@ See [api-reference.md](./api-reference.md) for full signatures.
 - No plugin-to-plugin imports. If two plugins need to share logic, put it in `src/utils/` and have both import from `#utils/*.js`.
 - No global mutable state outside `ctx`: a plugin's own module scope may hold private state (e.g. a cooldown `Map`), but never reach into another plugin's internals.
 - Never `import` a core file (`src/core/*`) directly from a plugin; everything a plugin needs is reachable through `ctx`.
-- Use the `#core/*.js`, `#utils/*.js`, `#events/*.js`, `#plugins/*.js`, `#types`, `#config` import aliases (defined in `package.json`'s `"imports"` field) instead of relative `../../` paths.
+- Use the `#core/*.js`, `#utils/*.js`, `#events/*.js`, `#plugins/*.js`, `#types`, `#config/*.js` import aliases (defined in `package.json`'s `"imports"` field) instead of relative `../../` paths.

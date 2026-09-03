@@ -9,7 +9,7 @@ Module resolution uses Node's native `package.json#imports` field, no `jsconfig.
 ```json
 "imports": {
   "#types": "./types.js",
-  "#config": "./config/config.js",
+  "#config": "./config/*.js",
   "#core/*.js": "./src/core/*.js",
   "#events/*.js": "./src/events/*.js",
   "#plugins/*.js": "./src/plugins/*.js",
@@ -20,7 +20,7 @@ Module resolution uses Node's native `package.json#imports` field, no `jsconfig.
 ```js
 import { Bot } from '#core/Bot.js';
 import { parseMessage } from '#utils/parseMessage.js';
-import config from '#config';
+import config from '#config/index.js';
 ```
 
 These resolve identically regardless of which file imports them: no more counting `../../` segments.
@@ -31,7 +31,7 @@ These resolve identically regardless of which file imports them: no more countin
 
 ```js
 import { Bot } from '#core/Bot.js';
-import config from '#config';
+import config from '#config/index.js';
 
 const bot = new Bot(config);
 

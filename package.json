@@ -17,7 +17,7 @@
    },
    "imports": {
       "#types": "./types.js",
-      "#config": "./config/config.js",
+      "#config/*.js": "./config/*.js",
       "#core/*.js": "./src/core/*.js",
       "#events/*.js": "./src/events/*.js",
       "#middlewares/*.js": "./src/middlewares/*.js",
@@ -39,6 +39,7 @@
       "@zapo-js/wam": "^0.1.1",
       "better-sqlite3": "^13.0.3",
       "dotenv": "^17.4.2",
+      "envalid": "^8.2.0",
       "moment-timezone": "^0.6.3",
       "pino": "^9.0.0",
       "pino-pretty": "^13.0.0",

@@ -1,9 +1,8 @@
+import configData from '#config/index.js';
 import { Bot } from '#core/Bot.js';
 import selfBotMiddleware from '#middlewares/selfBot.js';
 
-import config from '#config';
-
-const bot = new Bot(config);
+const bot = new Bot(configData);
 
 bot.use(selfBotMiddleware);
 

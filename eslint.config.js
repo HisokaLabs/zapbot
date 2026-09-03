@@ -17,6 +17,7 @@ export default [
          sourceType: 'module',
          globals: {
             ...globals.node,
+            config: 'readonly',
          },
       },
 

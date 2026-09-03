@@ -56,38 +56,14 @@ npm run format:check  # verify formatting
 
 ## Configuration 🔧
 
-Configuration is managed through [`config/config.js`](./config/config.js):
+Configuration is Laravel-style: each section lives in its own file under [`config/`](./config/), and [`config/index.js`](./config/index.js) autoloads them all into a single object exposed through the `config(key, fallback)` helper:
 
 ```js
-export default {
-   prefix: ['.', '!', '#'],
-
-   session: {
-      id: 'default',
-      storePath: './.auth/state.sqlite',
-      pairing: 'qr',
-      autoReconnect: true,
-      maxReconnectAttempts: 10,
-   },
-
-   autoSticker: {
-      enabled: false,
-      videoDurationLimit: 10,
-      packname: 'Bot Sticker',
-      author: 'Developer',
-   },
-
-   plugins: {
-      directory: './src/plugins',
-   },
-
-   logger: {
-      level: 'info',
-   },
-};
+config('session.pairing', 'qr'); // 'qr'
+config('prefix'); // ['.', '!', '#']
 ```
 
-Configuration values can be overridden through environment variables using `dotenv`. Copy [`.env.example`](./.env.example) to `.env` for deployment-specific settings such as session configuration.
+Configuration values can be overridden through environment variables using `dotenv` + `envalid`. Copy [`.env.example`](./.env.example) to `.env` for deployment-specific settings such as session configuration.
 
 Full reference: [`docs/configuration.md`](./docs/configuration.md)
 
@@ -150,7 +126,7 @@ More details: [`docs/event-development.md`](./docs/event-development.md)
 ## Project layout 🗂️
 
 ```
-config/config.js        # application configuration
+config/                # Laravel-style config (one file per section + index.js loader)
 
 types.js                # root JSDoc type definitions
 

@@ -10,7 +10,7 @@ Thanks for taking the time to contribute to the WhatsApp Bot Framework.
    npm install
    ```
    See [docs/installation.md](./docs/installation.md) for prerequisites (Node >= 20.9.0, `ffmpeg`, and a Windows native-module note if `npm install` fails building `better-sqlite3`/`sharp`).
-3. Copy `.env.example` to `.env` if you need to override any config field (session/phone number, etc.) without editing `config/config.js` directly.
+3. Copy `.env.example` to `.env` if you need to override any config field (session/phone number, etc.) without editing the files under `config/` directly.
 4. Run the bot to confirm your setup works:
    ```bash
    npm start        # node src/index.js

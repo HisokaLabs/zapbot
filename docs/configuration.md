@@ -1,54 +1,105 @@
 # Configuration 🔧
 
-All runtime behavior is controlled by [`config/config.js`](../config/config.js), a plain ES module default-exporting a `BotConfig` object (see `src/types/index.d.ts`). It is loaded once in `src/index.js` and wrapped by `core/ConfigManager.js`, which every plugin/event/middleware reads through `ctx.config`.
+Configuration is Laravel-style: instead of one big `config.js`, every section lives in its own file under [`config/`](../config/), each default-exporting a plain object. [`config/index.js`](../config/index.js) autoloads them all (any `config/*.js` except itself), merges them into a single object keyed by filename, and exposes a `config(key, fallback)` helper globally. That merged object is what `src/index.js` imports and hands to `core/ConfigManager.js`, which every plugin/event/middleware reads through `ctx.config`.
 
-## Overriding values via `.env`
+```
+config/
+├── index.js         # loader + config() helper (the only "meta" file)
+├── prefix.js        # command prefixes
+├── session.js       # zapo WaClient session/identity
+├── autoSticker.js   # auto sticker converter
+├── selfBot.js       # owner-only gate
+├── developer.js     # developer phone numbers
+├── pendingCommand.js# pending-command timeout
+├── exec.js          # developer exec sandbox
+├── plugins.js       # plugin loader directory
+└── logger.js        # logger level/format/name
+```
 
-`config.js` loads [`dotenv`](https://www.npmjs.com/package/dotenv) (`import 'dotenv/config'`) before building the config object, so every field can be overridden by an environment variable without editing the file, useful for keeping deployment/account-specific values (like `session.phoneNumber`) out of source control. Copy [`.env.example`](../.env.example) to `.env` (already git-ignored) and fill in what you need; anything left unset falls back to the hardcoded default shown below.
+## Reading config
 
-| `.env` variable                     | Config path                      | Default                |
-| ----------------------------------- | -------------------------------- | ---------------------- |
-| `PREFIX` (comma-separated)          | `prefix`                         | `.,!,#`                |
-| `SESSION_ID`                        | `session.id`                     | `default`              |
-| `SESSION_STORE_PATH`                | `session.storePath`              | `./.auth/state.sqlite` |
-| `SESSION_DEVICE_BROWSER`            | `session.deviceBrowser`          | `edge`                 |
-| `SESSION_PAIRING`                   | `session.pairing`                | `qr`                   |
-| `SESSION_PHONE_NUMBER`              | `session.phoneNumber`            | `''`                   |
-| `SESSION_AUTO_RECONNECT`            | `session.autoReconnect`          | `true`                 |
-| `SESSION_MAX_RECONNECT_ATTEMPTS`    | `session.maxReconnectAttempts`   | `10`                   |
-| `AUTO_STICKER_ENABLED`              | `autoSticker.enabled`            | `false`                |
-| `AUTO_STICKER_VIDEO_DURATION_LIMIT` | `autoSticker.videoDurationLimit` | `10`                   |
-| `AUTO_STICKER_PACKNAME`             | `autoSticker.packname`           | `Bot Sticker`          |
-| `AUTO_STICKER_AUTHOR`               | `autoSticker.author`             | `Developer`            |
-| `BOT_DEVELOPER_NUMBER`              | `developer.numbers`              | `[]`                   |
-| `SELF_BOT_ENABLED`                  | `selfBot.enabled`                | `false`                |
-| `PENDING_COMMAND_TIMEOUT`           | `pendingCommand.timeout`         | `60000`                |
-| `PLUGINS_DIRECTORY`                 | `plugins.directory`              | `./src/plugins`        |
-| `LOG_LEVEL`                         | `logger.level`                   | `info`                 |
-| `LOG_PRETTY`                        | `logger.pretty`                  | `true`                 |
-| `LOG_NAME`                          | `logger.name`                    | `ZapBot`               |
-| `EXEC_SANDBOX_MODE`                 | `exec.mode`                      | `auto`                 |
-| `EXEC_SANDBOX_IMAGE`                | `exec.image`                     | `debian:bookworm-slim` |
-| `EXEC_TIMEOUT`                      | `exec.timeoutMs`                 | `15000`                |
-| `EXEC_MAX_OUTPUT`                   | `exec.maxOutput`                 | `4000`                 |
-| `EXEC_SANDBOX_MEMORY`               | `exec.memory`                    | `256m`                 |
-| `EXEC_SANDBOX_CPUS`                 | `exec.cpus`                      | `0.5`                  |
-| `EXEC_SANDBOX_PIDS_LIMIT`           | `exec.pidsLimit`                 | `64`                   |
-| `EXEC_SANDBOX_NETWORK`              | `exec.network`                   | `false`                |
-| `EXEC_SANDBOX_READONLY`             | `exec.readOnly`                  | `true`                 |
-| `EXEC_SANDBOX_USER`                 | `exec.user`                      | `65534:65534`          |
-
-## Prefix configuration
+Three equivalent ways to read a value, all dot-path based:
 
 ```js
+// 1. global helper — available in any module, no import needed
+config('session.pairing', 'qr');
+
+// 2. from a plugin/event/middleware, via the shared context
+const pairing = ctx.config.get('session.pairing', 'qr');
+
+// 3. raw merged object (rarely needed)
+import configData from '#config/index.js'; // { prefix: [...], session: {...}, ... }
+```
+
+`config(key, fallback)` and `ctx.config.get(key, fallback)` both walk dot-separated segments and return `fallback` when the path is missing. `ctx.config` is a `ConfigManager` (`core/ConfigManager.js`) wrapping the same merged object; it also offers `set(path, value)` (emits a `change` event), `getAll()`, and `getPrefixes()` (see [Prefix configuration](#prefix-configuration)).
+
+## Adding a new config file
+
+Drop a new `config/<name>.js` that default-exports an object. It is picked up automatically on the next boot — no registration list, no edit to `index.js`. The filename (minus `.js`) becomes its top-level key: `config/session.js` → `config('session.id')`.
+
+```js
+// config/myFeature.js
+import 'dotenv/config';
+import { bool, cleanEnv } from 'envalid';
+
+const env = cleanEnv(process.env, {
+   MY_FEATURE_ENABLED: bool({ default: false }),
+});
+
 export default {
-   prefix: ['.', '!', '#'],
+   enabled: env.MY_FEATURE_ENABLED,
 };
 ```
 
-- **Single prefix**: `prefix: '.'`
-- **Multiple prefixes** (`prefix: ['.', '!', '#']`): any of them is accepted, e.g. `.ping`, `!ping`, `#menu` all resolve to the same `ping`/`menu` commands.
+## Environment variables (`.env`)
+
+Each config file calls `import 'dotenv/config'` and parses its variables with [`envalid`](https://www.npmjs.com/package/envalid), so every field can be overridden by an environment variable without editing the file — and invalid values (e.g. a non-boolean for a `bool` var, or a value outside an allowed `choices` list) **fail fast at boot** instead of silently misbehaving. Copy [`.env.example`](../.env.example) to `.env` (already git-ignored) and fill in what you need; anything left unset falls back to the default shown below.
+
+| `.env` variable                     | Config path                      | Default                | Notes                                                |
+| ----------------------------------- | -------------------------------- | ---------------------- | ---------------------------------------------------- |
+| `PREFIX`                            | `prefix`                         | `.,!,#`                | Comma-separated; parsed into an array.               |
+| `SESSION_ID`                        | `session.id`                     | `default`              | Alphanumeric + hyphens only.                         |
+| `SESSION_STORE_PATH`                | `session.storePath`              | `./.auth/state.sqlite` |                                                      |
+| `SESSION_DEVICE_BROWSER`            | `session.deviceBrowser`          | `edge`                 | zapo `WA_BROWSERS` value.                            |
+| `SESSION_OS_DISPLAY_NAME`           | `session.deviceOsDisplayName`    | `Windows`              | OS name shown in _Linked Devices_.                   |
+| `SESSION_PAIRING`                   | `session.pairing`                | `qr`                   | `qr` \| `code` (enforced).                           |
+| `SESSION_PHONE_NUMBER`              | `session.phoneNumber`            | `''`                   | Required when `pairing` is `code`. Digits only.      |
+| `SESSION_AUTO_RECONNECT`            | `session.autoReconnect`          | `true`                 |                                                      |
+| `SESSION_MAX_RECONNECT_ATTEMPTS`    | `session.maxReconnectAttempts`   | `10`                   |                                                      |
+| `SESSION_MARK_ONLINE_ON_CONNECT`    | `session.markOnlineOnConnect`    | `false`                |                                                      |
+| `AUTO_STICKER_ENABLED`              | `autoSticker.enabled`            | `false`                |                                                      |
+| `AUTO_STICKER_VIDEO_DURATION_LIMIT` | `autoSticker.videoDurationLimit` | `10`                   |                                                      |
+| `AUTO_STICKER_PACKNAME`             | `autoSticker.packname`           | `Bot Sticker`          |                                                      |
+| `AUTO_STICKER_AUTHOR`               | `autoSticker.author`             | `Developer`            |                                                      |
+| `BOT_DEVELOPER_NUMBER`              | `developer.numbers`              | `''`                   | Comma-separated; parsed into an array.               |
+| `SELF_BOT_ENABLED`                  | `selfBot.enabled`                | `false`                |                                                      |
+| `PENDING_COMMAND_TIMEOUT`           | `pendingCommand.timeout`         | `60000`                |                                                      |
+| `EXEC_SANDBOX_MODE`                 | `exec.mode`                      | `auto`                 | `auto` \| `docker` \| `podman` \| `host` (enforced). |
+| `EXEC_SANDBOX_IMAGE`                | `exec.image`                     | `debian:bookworm-slim` |                                                      |
+| `EXEC_TIMEOUT`                      | `exec.timeoutMs`                 | `15000`                |                                                      |
+| `EXEC_MAX_OUTPUT`                   | `exec.maxOutput`                 | `4000`                 |                                                      |
+| `EXEC_SANDBOX_MEMORY`               | `exec.memory`                    | `256m`                 |                                                      |
+| `EXEC_SANDBOX_CPUS`                 | `exec.cpus`                      | `0.5`                  |                                                      |
+| `EXEC_SANDBOX_PIDS_LIMIT`           | `exec.pidsLimit`                 | `64`                   |                                                      |
+| `EXEC_SANDBOX_NETWORK`              | `exec.network`                   | `false`                |                                                      |
+| `EXEC_SANDBOX_READONLY`             | `exec.readOnly`                  | `true`                 |                                                      |
+| `EXEC_SANDBOX_USER`                 | `exec.user`                      | `65534:65534`          |                                                      |
+| `PLUGINS_DIRECTORY`                 | `plugins.directory`              | `./src/plugins`        |                                                      |
+| `LOG_LEVEL`                         | `logger.level`                   | `info`                 | `trace` \| `debug` \| `info` \| `warn` \| `error`.   |
+| `LOG_PRETTY`                        | `logger.pretty`                  | `true`                 |                                                      |
+| `LOG_NAME`                          | `logger.name`                    | `ZapBot`               |                                                      |
+
+## Prefix configuration
+
+`config/prefix.js` returns a `string[]`:
+
+```js
+export default ['.', '!', '#']; // built from PREFIX=".,!,#"
+```
+
+- **Multiple prefixes** (`['.', '!', '#']`): any of them is accepted, e.g. `.ping`, `!ping`, `#menu` all resolve to the same `ping`/`menu` commands.
 - Prefixes are matched with a plain `String#startsWith`, longest-match-agnostic, so pick prefixes that don't collide (`.` and `..` together would be ambiguous).
+- `getPrefixes()` normalizes a single string to a one-element array for you, so `ctx.config.getPrefixes()` is always `string[]`.
 
 ### Changing the prefix without restarting
 
@@ -61,78 +112,44 @@ ctx.config.set('prefix', ['.', '/']);
 
 The next incoming message picks up the new prefix list immediately: `events/message.js` reads `ctx.config.getPrefixes()` fresh on every message, it never caches the array. This is what lets you build, for example, an admin-only `.setprefix` command plugin without touching core files or restarting the process.
 
-## Sticker configuration
-
-```js
-export default {
-   autoSticker: {
-      enabled: false, // master switch for automatic conversion
-      videoDurationLimit: 10, // seconds; longer videos are ignored
-      packname: 'Bot Sticker', // WebP EXIF pack name
-      author: 'Developer', // WebP EXIF author
-   },
-};
-```
-
-- `enabled: false` (the default) disables `events/stickerConverter.js` entirely: incoming media is inspected (for the `media`/`image`/`video`/`gif` bus events) but never auto-converted.
-- `videoDurationLimit` only applies to videos; GIFs (a video message with `gifPlayback: true`) always convert regardless of length, matching WhatsApp's own GIF semantics (they're short by construction).
-- `packname`/`author` are also the defaults used by the manual `.sticker` command plugin (`src/plugins/sticker/index.js`) unless it's edited to use its own values.
-
-## Self bot (owner-only) configuration
-
-```js
-export default {
-   selfBot: {
-      enabled: false, // master switch for owner-only mode
-   },
-};
-```
-
-- `enabled: false` (the default) means everyone can use the bot.
-- `enabled: true` turns on owner-only mode: every incoming message must come from the bot's own account (its own number, i.e. `fromMe`) or from a number listed in `developer.numbers` (`BOT_DEVELOPER_NUMBER`). Anything else is dropped **silently** — the middleware never calls `next()`, so no command runs and no message is sent back.
-
-The gate is implemented as a middleware at `src/middlewares/selfBot.js`, registered in `src/index.js` via `bot.use(selfBotMiddleware)`. It reads `selfBot.enabled` fresh on every message, so you can toggle it at runtime:
-
-```js
-ctx.config.set('selfBot.enabled', true);
-```
-
 ## Session configuration
 
 ```js
+// config/session.js
 export default {
-   session: {
-      id: 'default',
-      storePath: './.auth/state.sqlite',
-      deviceBrowser: 'edge', // zapo WA_BROWSERS: 'chrome' | 'chromium' | 'firefox' | 'safari' | 'ie' | 'opera' | 'edge'
-      pairing: 'qr', // 'qr' | 'code'
-      phoneNumber: '', // required when pairing === 'code'
-      autoReconnect: true,
-      maxReconnectAttempts: 10,
-   },
+   id: 'default',
+   storePath: './.auth/state.sqlite',
+   deviceBrowser: 'edge', // zapo WA_BROWSERS: 'chrome' | 'chromium' | 'firefox' | 'safari' | 'ie' | 'opera' | 'edge'
+   deviceOsDisplayName: 'Windows',
+   pairing: 'qr', // 'qr' | 'code'
+   phoneNumber: '', // required when pairing === 'code'
+   autoReconnect: true,
+   maxReconnectAttempts: 10,
+   markOnlineOnConnect: false,
 };
 ```
 
 - `id` is forwarded to zapo's `WaClient` as `sessionId`: it keys every store domain (auth, signal, messages, ...). Changing it between runs orphans the previous credentials; run multiple bot instances by giving each a distinct `id` **and** `storePath`.
 - `deviceBrowser` must be one of zapo's `WA_BROWSERS` values (`src/core/ClientWrapper.js` imports the enum from `zapo-js/protocol`); it drives the _Linked Devices_ label shown on the phone and the companion platform id sent during pairing.
+- `deviceOsDisplayName` is the OS name shown in _Linked Devices_ (e.g. `Windows`, `Mac OS`, `Android`).
+- `markOnlineOnConnect` controls zapo's `markOnlineOnConnect` option: `true` broadcasts online presence to every contact on every connect; `false` (the default) keeps a headless bot invisible, matching WhatsApp Web with an unfocused tab.
 - `autoReconnect` / `maxReconnectAttempts` control `core/ClientWrapper.js`'s exponential-backoff reconnect loop, used only for transient drops (`connection: close` with `isLogout: false`). A real logout (device unlinked from the phone) never auto-reconnects; you must re-pair.
 
-### WaClient options not driven by `config.js`
+### WaClient options not driven by config
 
-`ClientWrapper#createClient()` also passes a handful of zapo `WaClient` options that are **hard-coded in the constructor**, not read from `config/config.js`. Editing `config.js` won't change these; edit `src/core/ClientWrapper.js` directly:
+`ClientWrapper#createClient()` also passes a handful of zapo `WaClient` options that are **hard-coded in the constructor**, not read from `config/*.js`. Editing config won't change these; edit `src/core/ClientWrapper.js` directly:
 
-| Option                                        | Current value   | Why it matters (per zapo's docs)                                                                                                                                                                                                                                              |
-| --------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `markOnlineOnConnect`                         | `true`          | zapo defaults this to `false` (announce as unavailable, matching WhatsApp Web with an unfocused tab) so headless bots stay invisible. Forcing `true` broadcasts online presence to every contact on every connect.                                                            |
-| `history: { enabled, requireFullSync }`       | `true` / `true` | `requireFullSync: true` requests the **full** chat history from the phone on every fresh pair instead of just recent chats, slow and bandwidth-heavy on large accounts. Only keep it on if you actually consume `history_sync_chunk` events.                                  |
-| `media.generate*` / `normalizeVoiceNote`      | all `true`      | Each flag depends on the `@zapo-js/media-utils` processor, which in turn needs `sharp` plus a system `ffmpeg`/`ffprobe` on `PATH`. Missing binaries fail generation silently per-message rather than at boot, verify they're installed before shipping with all four enabled. |
-| `plugins: [wamPlugin({ syntheticUi: true })]` | on              | Registers zapo's own client-level addon plugin (unrelated to this framework's `config.plugins.directory` command/event loader; don't confuse the two).                                                                                                                        |
+| Option                                         | Current value   | Why it matters (per zapo's docs)                                                                                                                                                                                                                                         |
+| ---------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `history: { enabled, requireFullSync }`        | `true` / `true` | `requireFullSync: true` requests the **full** chat history from the phone on every fresh pair instead of just recent chats, slow and bandwidth-heavy on large accounts. Only keep it on if you actually consume `history_sync_chunk` events.                             |
+| `media.generate*` / `normalizeVoiceNote`       | all `true`      | Each flag depends on the `@zapo-js/media-utils` processor, which in turn needs `sharp` plus a system `ffmpeg`/`ffprobe` on `PATH`. Missing binaries fail generation silently per-message rather than at boot, verify they're installed before shipping with all enabled. |
+| `plugins: [wamPlugin({ syntheticUi: false })]` | on              | Registers zapo's own client-level addon plugin (unrelated to this framework's `plugins.directory` command/event loader; don't confuse the two).                                                                                                                          |
 
 Store providers (`store.providers` inside `createClient()`) are likewise hard-coded to `'sqlite'` for every domain. Set a domain to `'none'` (e.g. `messages: 'none'`) to skip persisting that archive, or swap the backend key if you install a different `@zapo-js/store-*` package.
 
 ### Full `WaClient` options reference
 
-zapo's `WaClient` accepts far more than what `createClient()` currently wires up (full source: [zapo.to/en/concepts/configuration](https://zapo.to/en/concepts/configuration)). Use this as a lookup when extending `ClientWrapper.js`: pass extra keys straight into the first `new WaClient({ ... })` argument, and expose them via `config.js` following the existing `config.get('session.x', fallback)` pattern.
+zapo's `WaClient` accepts far more than what `createClient()` currently wires up (full source: [zapo.to/en/concepts/configuration](https://zapo.to/en/concepts/configuration)). Use this as a lookup when extending `ClientWrapper.js`: pass extra keys straight into the first `new WaClient({ ... })` argument, and expose them via a new `config/*.js` file following the existing `config('session.x', fallback)` pattern.
 
 **Required**
 
@@ -147,7 +164,7 @@ zapo's `WaClient` accepts far more than what `createClient()` currently wires up
 | ------------------------- | -------------- | ---------------------------------------------------------------------------- |
 | `deviceBrowser`           | `'chrome'`     | See `WA_BROWSERS`; already wired via `session.deviceBrowser`.                |
 | `devicePlatform`          | inferred       | Numeric companion platform override for non-browser platforms.               |
-| `deviceOsDisplayName`     | current OS     | OS name shown in _Linked Devices_.                                           |
+| `deviceOsDisplayName`     | current OS     | Already wired via `session.deviceOsDisplayName`.                             |
 | `version`                 | tested default | Dotted-numeric string or async resolver; wrong part-count throws on connect. |
 | `recoverFromClientTooOld` | `false`        | Auto re-fetch version + reconnect on HTTP 405 `failure_client_too_old`.      |
 
@@ -177,14 +194,14 @@ zapo's `WaClient` accepts far more than what `createClient()` currently wires up
 
 **Media & link preview**
 
-| Option                                                                                                               | Notes                                                                                     |
-| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `media.processor`                                                                                                    | `WaMediaProcessor` instance (e.g. `@zapo-js/media-utils`); already wired.                 |
-| `media.generateThumbnail` / `generateProbe` / `generateWaveform` / `generateStickerThumbnail` / `normalizeVoiceNote` | Per-feature flags, see table above.                                                       |
-| `linkPreview.enabled`                                                                                                | Global default for `text` message auto-fetch; per-send `linkPreview` option overrides it. |
-| `linkPreview.fetchTimeoutMs` / `maxHtmlBytes` / `maxThumbnailBytes`                                                  | Guardrails against slow/huge pages.                                                       |
-| `linkPreview.allowPrivateHosts`                                                                                      | `false` by default; keep it off to avoid SSRF against your own network.                   |
-| `linkPreview.fetcher` / `userAgent` / `proxy`                                                                        | Swap in a custom fetcher or route it through a proxy.                                     |
+| Option                                                                                             | Notes                                                                                     |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `media.processor`                                                                                  | `WaMediaProcessor` instance (e.g. `@zapo-js/media-utils`); already wired.                 |
+| `media.generateThumbnail` / `generateWaveform` / `generateStickerThumbnail` / `normalizeVoiceNote` | Per-feature flags, see table above.                                                       |
+| `linkPreview.enabled`                                                                              | Global default for `text` message auto-fetch; per-send `linkPreview` option overrides it. |
+| `linkPreview.fetchTimeoutMs` / `maxHtmlBytes` / `maxThumbnailBytes`                                | Guardrails against slow/huge pages.                                                       |
+| `linkPreview.allowPrivateHosts`                                                                    | `false` by default; keep it off to avoid SSRF against your own network.                   |
+| `linkPreview.fetcher` / `userAgent` / `proxy`                                                      | Swap in a custom fetcher or route it through a proxy.                                     |
 
 **Persistence tuning**
 
@@ -213,36 +230,97 @@ zapo's `WaClient` accepts far more than what `createClient()` currently wires up
 
 ### Plugins: `wamPlugin` (`@zapo-js/wam`)
 
-`ClientWrapper.js` registers `wamPlugin({ syntheticUi: true })`. It emits WhatsApp Web's own `w:stats` (**WAM**) telemetry batches so a headless session's wire fingerprint matches a real WA Web tab more closely; it is a **parity feature, not observability for your bot** (see [zapo.to/en/guides/wam](https://zapo.to/en/guides/wam)).
+`ClientWrapper.js` registers `wamPlugin({ syntheticUi: false })`. It emits WhatsApp Web's own `w:stats` (**WAM**) telemetry batches so a headless session's wire fingerprint matches a real WA Web tab more closely; it is a **parity feature, not observability for your bot** (see [zapo.to/en/guides/wam](https://zapo.to/en/guides/wam)).
 
-| Option                              | Default       | Notes                                                                                                                                                                                             |
-| ----------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `autoEmit`                          | `true`        | Auto-captures real protocol/integrator events (connects, sends, app-state changes); no fabrication.                                                                                               |
-| `syntheticUi`                       | `true`        | Fabricates plausible `UiAction` events (chat opens, image views, ...) so the profile doesn't look "sends-only". Pass `false` to disable, or an options object to tune probabilities/active hours. |
-| `flushIntervalMs` / `maxBufferSize` | 5000ms / 50KB | Coalescing window / size threshold before a batch uploads.                                                                                                                                        |
-| `appVersion`                        | `WA_VERSION`  | Override the advertised app version in batches.                                                                                                                                                   |
-| `serviceImprovementOptOut`          | `false`       | Consent bit sent with each batch.                                                                                                                                                                 |
+| Option                              | Default       | Notes                                                                                                                                                                                                  |
+| ----------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `autoEmit`                          | `true`        | Auto-captures real protocol/integrator events (connects, sends, app-state changes); no fabrication.                                                                                                    |
+| `syntheticUi`                       | `false`       | Fabricates plausible `UiAction` events (chat opens, image views, ...) so the profile doesn't look "sends-only". Set to `true` to enable, or pass an options object to tune probabilities/active hours. |
+| `flushIntervalMs` / `maxBufferSize` | 5000ms / 50KB | Coalescing window / size threshold before a batch uploads.                                                                                                                                             |
+| `appVersion`                        | `WA_VERSION`  | Override the advertised app version in batches.                                                                                                                                                        |
+| `serviceImprovementOptOut`          | `false`       | Consent bit sent with each batch.                                                                                                                                                                      |
 
 Inside `syntheticUi`, the capability gates `channels` / `communities` / `business` default to **`false`**: only flip one on if the paired account genuinely has that surface; firing e.g. a channel event on an account without channels is a detectable tell. Batches only upload once connected **and** `credentials.meJid` is populated (registration complete): anything committed before that is silently dropped, not queued.
 
 Exposed at `this.client.wam` (three methods): `commit(name, payload)` to inject a WAM event manually, `flush()` to force an upload, `dispose()` on shutdown. The plugin is entirely optional; messaging/calling works with it removed from `plugins: []`.
 
-## Exec sandbox configuration
+## Sticker configuration
+
+`config/autoSticker.js`:
 
 ```js
 export default {
-   exec: {
-      mode: 'auto', // 'auto' | 'docker' | 'podman' | 'host'
-      image: 'debian:bookworm-slim',
-      timeoutMs: 15000,
-      maxOutput: 4000,
-      memory: '256m',
-      cpus: '0.5',
-      pidsLimit: 64,
-      network: false,
-      readOnly: true,
-      user: '65534:65534',
-   },
+   enabled: false, // master switch for automatic conversion
+   videoDurationLimit: 10, // seconds; longer videos are ignored
+   packname: 'Bot Sticker', // WebP EXIF pack name
+   author: 'Developer', // WebP EXIF author
+};
+```
+
+- `enabled: false` (the default) disables `events/stickerConverter.js` entirely: incoming media is inspected (for the `media`/`image`/`video`/`gif` bus events) but never auto-converted.
+- `videoDurationLimit` only applies to videos; GIFs (a video message with `gifPlayback: true`) always convert regardless of length, matching WhatsApp's own GIF semantics (they're short by construction).
+- `packname`/`author` are also the defaults used by the manual `.sticker` command plugin (`src/plugins/sticker/index.js`) unless it's edited to use its own values.
+
+## Self bot (owner-only) configuration
+
+`config/selfBot.js`:
+
+```js
+export default {
+   enabled: false, // master switch for owner-only mode
+};
+```
+
+- `enabled: false` (the default) means everyone can use the bot.
+- `enabled: true` turns on owner-only mode: every incoming message must come from the bot's own account (its own number, i.e. `fromMe`) or from a number listed in `developer.numbers` (`BOT_DEVELOPER_NUMBER`). Anything else is rejected — the middleware throws, so no command runs and no message is sent back.
+
+The gate is implemented as a middleware at `src/middlewares/selfBot.js`, registered in `src/index.js` via `bot.use(selfBotMiddleware)`. It reads `selfBot.enabled` fresh on every message, so you can toggle it at runtime:
+
+```js
+ctx.config.set('selfBot.enabled', true);
+```
+
+## Developer configuration
+
+`config/developer.js` returns the list of numbers allowed to run `developer`-category plugins (`eval`, `exec`):
+
+```js
+export default {
+   numbers: [], // from BOT_DEVELOPER_NUMBER, e.g. "6281234567890,6289876543210"
+};
+```
+
+- Each entry must be digits only, with country code; the category is matched from each message's `senderJid`.
+- Keep these out of source control (the `.env` value is git-ignored), and leave it empty on a public bot.
+
+## Pending command configuration
+
+`config/pendingCommand.js`:
+
+```js
+export default {
+   timeout: 60_000, // ms a pending command waits for the user's next message
+};
+```
+
+Controls `core/PendingCommandManager.js`, the transient in-memory store used by plugins that need a follow-up message (e.g. "send me the image now"). The timeout can also be overridden per-entry via `ctx.pending.wait(command, kinds, { timeout })`.
+
+## Exec sandbox configuration
+
+`config/exec.js`:
+
+```js
+export default {
+   mode: 'auto', // 'auto' | 'docker' | 'podman' | 'host'
+   image: 'debian:bookworm-slim',
+   timeoutMs: 15000,
+   maxOutput: 4000,
+   memory: '256m',
+   cpus: '0.5',
+   pidsLimit: 64,
+   network: false,
+   readOnly: true,
+   user: '65534:65534',
 };
 ```
 
@@ -271,11 +349,11 @@ Docker is only the default; the plugin's `mode` already supports **Podman** as a
 
 ## Plugin configuration
 
+`config/plugins.js`:
+
 ```js
 export default {
-   plugins: {
-      directory: './src/plugins',
-   },
+   directory: './src/plugins',
 };
 ```
 
@@ -283,18 +361,14 @@ export default {
 
 ## Logger configuration
 
+`config/logger.js`:
+
 ```js
 export default {
-   logger: { level: 'info' }, // 'trace' | 'debug' | 'info' | 'warn' | 'error'
+   level: 'info', // 'trace' | 'debug' | 'info' | 'warn' | 'error'
+   pretty: true, // pretty-print to console (requires pino-pretty)
+   name: 'ZapBot',
 };
 ```
 
-Controls `core/Logger.js`'s verbosity for both the framework's own logs and (indirectly, see [api-reference.md](./api-reference.md#logger)) anything logged through `ctx.logger`.
-
-## Reading config from a plugin or event
-
-```js
-// ctx.config.get(path, fallback)
-const enabled = ctx.config.get('autoSticker.enabled', false);
-const prefixes = ctx.config.getPrefixes(); // always an array, regardless of string|string[] in config.js
-```
+Controls `core/Logger.js`'s verbosity for both the framework's own logs and (indirectly, see [api-reference.md](./api-reference.md#logger)) anything logged through `ctx.logger`. `level` is validated against the allowed set by `envalid` at boot.
