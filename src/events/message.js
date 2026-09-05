@@ -16,7 +16,7 @@ export default {
       async function processMessage(messageContext) {
          const { chatJid, senderJid, fromMe, text } = messageContext;
 
-         if (!fromMe && text) {
+         if (text) {
             const prefix = matchPrefix(text, ctx.config.getPrefixes());
             if (prefix) {
                ctx.pending.clear(chatJid, senderJid);
