@@ -16,7 +16,20 @@ export function normalizeNumber(value) {
 export function getDeveloperNumbers(ctx) {
    const raw = ctx.config.get('developer.numbers', []);
    const list = Array.isArray(raw) ? raw : [raw];
-   return list.map(normalizeNumber).filter(Boolean);
+
+   const developers = list.map(normalizeNumber).filter(Boolean);
+
+   try {
+      const selfNumber = normalizeNumber(ctx.client.getCredentials()?.meJid ?? '');
+
+      if (selfNumber && !developers.includes(selfNumber)) {
+         developers.push(selfNumber);
+      }
+   } catch {
+      // Ignore credential lookup errors.
+   }
+
+   return developers;
 }
 
 /**

@@ -154,7 +154,12 @@ export class ClientWrapper {
             return;
          }
 
-         if (!this.intentionalDisconnect && this.config.get('session.autoReconnect', true)) {
+         if (
+            !this.intentionalDisconnect &&
+            this.config.get('session.autoReconnect', true) &&
+            event.reason !== WA_DISCONNECT_REASONS.STREAM_ERROR_REPLACED &&
+            event.reason !== WA_DISCONNECT_REASONS.STREAM_ERROR_DEVICE_REMOVED
+         ) {
             this.scheduleReconnect();
          }
       });

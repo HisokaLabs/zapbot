@@ -6,7 +6,9 @@ import { isSelfBotAllowed } from '#utils/selfBot.js';
  * @type {import('#types').Middleware}
  */
 export default async function selfBotGuard(message, next) {
-   if (!config('selfBot.enabled', false)) return await next();
+   const enabled = message.ctx.selfBotEnabled ?? config('selfBot.enabled', false);
+
+   if (!enabled) return await next();
 
    if (isSelfBotAllowed(message)) return await next();
 
